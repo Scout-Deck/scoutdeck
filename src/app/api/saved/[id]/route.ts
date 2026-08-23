@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { SaveOpportunityParams } from "@/lib/api-zod";
+import { parsePathParams } from "@/lib/api/validate";
 import { saveOpportunity, unsaveOpportunity } from "@/lib/db";
 
 type RouteContext = {
@@ -7,7 +9,12 @@ type RouteContext = {
 
 export async function PUT(_request: Request, context: RouteContext) {
   const { id } = await context.params;
-  const saved = await saveOpportunity(id);
+  const parsed = parsePathParams(SaveOpportunityParams, { id });
+  if ("error" in parsed) {
+    return parsed.error;
+  }
+
+  const saved = await saveOpportunity(parsed.data.id);
 
   if (!saved) {
     return new NextResponse(null, { status: 404 });
@@ -18,6 +25,11 @@ export async function PUT(_request: Request, context: RouteContext) {
 
 export async function DELETE(_request: Request, context: RouteContext) {
   const { id } = await context.params;
-  await unsaveOpportunity(id);
+  const parsed = parsePathParams(SaveOpportunityParams, { id });
+  if ("error" in parsed) {
+    return parsed.error;
+  }
+
+  await unsaveOpportunity(parsed.data.id);
   return new NextResponse(null, { status: 204 });
 }

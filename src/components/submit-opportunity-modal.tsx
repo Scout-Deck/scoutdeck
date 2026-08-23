@@ -1,8 +1,10 @@
+'use client';
+
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useQueryClient } from '@tanstack/react-query';
 import { X, ArrowUpRight, Link2, FileText } from 'lucide-react';
-import { useSubmitOpportunity, getListOpportunitiesQueryKey } from '@workspace/api-client-react';
+import { useSubmitOpportunity, getListOpportunitiesQueryKey } from '@/lib/api-client';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';

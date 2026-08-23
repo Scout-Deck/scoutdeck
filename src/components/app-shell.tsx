@@ -1,5 +1,8 @@
+'use client';
+
 import { useState, type ReactNode } from 'react';
-import { Link, useLocation } from 'wouter';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Bookmark, Compass, Plus, UserRound } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SubmitOpportunityModal } from '@/components/submit-opportunity-modal';
@@ -13,8 +16,11 @@ const navItems = [
 ];
 
 export function AppShell({ children }: AppShellProps) {
-  const [location] = useLocation();
+  const pathname = usePathname();
   const [submitOpen, setSubmitOpen] = useState(false);
+
+  const isActive = (href: string) =>
+    href === '/' ? pathname === '/' : pathname.startsWith(href);
 
   return (
     <div className="grain min-h-[100dvh] bg-background">
@@ -34,10 +40,10 @@ export function AppShell({ children }: AppShellProps) {
               data-testid={`link-nav-${label.toLowerCase().replaceAll(' ', '-')}`}
               className={cn(
                 'focus-ring flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-[background,color,transform] duration-200',
-                location === href ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm' : 'text-sidebar-foreground/62 hover:bg-sidebar-accent/70 hover:text-sidebar-foreground',
+                isActive(href) ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm' : 'text-sidebar-foreground/62 hover:bg-sidebar-accent/70 hover:text-sidebar-foreground',
               )}
             >
-              <Icon size={18} strokeWidth={location === href ? 2.5 : 1.8} />
+              <Icon size={18} strokeWidth={isActive(href) ? 2.5 : 1.8} />
               {label}
               {href === '/saved' && <span className="ml-auto size-1.5 rounded-full bg-sidebar-primary" />}
             </Link>
@@ -78,8 +84,8 @@ export function AppShell({ children }: AppShellProps) {
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border/80 bg-background/95 px-5 pb-[max(12px,env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl md:hidden" aria-label="Mobile navigation">
         <div className="mx-auto flex max-w-sm items-center justify-around">
           {navItems.map(({ href, label, icon: Icon }) => (
-            <Link key={href} href={href} data-testid={`link-mobile-${label.toLowerCase().replaceAll(' ', '-')}`} className={cn('focus-ring flex min-w-[70px] flex-col items-center gap-1 rounded-xl px-3 py-1.5 text-[10px] font-medium', location === href ? 'text-primary' : 'text-muted-foreground')}>
-              <Icon size={19} strokeWidth={location === href ? 2.5 : 1.8} />
+            <Link key={href} href={href} data-testid={`link-mobile-${label.toLowerCase().replaceAll(' ', '-')}`} className={cn('focus-ring flex min-w-[70px] flex-col items-center gap-1 rounded-xl px-3 py-1.5 text-[10px] font-medium', isActive(href) ? 'text-primary' : 'text-muted-foreground')}>
+              <Icon size={19} strokeWidth={isActive(href) ? 2.5 : 1.8} />
               {label === 'Your profile' ? 'Profile' : label}
             </Link>
           ))}

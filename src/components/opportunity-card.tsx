@@ -1,9 +1,11 @@
+'use client';
+
 import { useState, type MouseEvent } from 'react';
-import { Link } from 'wouter';
+import Link from 'next/link';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowUpRight, Bookmark, CalendarDays, Check, MapPin } from 'lucide-react';
-import type { Opportunity } from '@workspace/api-client-react';
-import { getListOpportunitiesQueryKey, getListSavedOpportunitiesQueryKey, useSaveOpportunity, useUnsaveOpportunity } from '@workspace/api-client-react';
+import type { Opportunity } from '@/lib/api-client';
+import { getListOpportunitiesQueryKey, getListSavedOpportunitiesQueryKey, useSaveOpportunity, useUnsaveOpportunity } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
 
 const typeLabels: Record<string, string> = { internship: 'Internship', fellowship: 'Fellowship', hackathon: 'Hackathon', scholarship: 'Scholarship', grant: 'Grant', job: 'Early career job' };
