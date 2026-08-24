@@ -48,7 +48,7 @@ function DefaultFallback({ error, resetError }: ErrorFallbackProps) {
           This part of the app hit an error. Your other trails are still safe.
         </p>
         {/* Dev only: messages can carry API responses and other internals. */}
-        {import.meta.env.DEV ? (
+        {process.env.NODE_ENV === 'development' ? (
           <pre className="mt-4 overflow-x-auto rounded-xl border border-border bg-card p-3 text-left text-xs text-muted-foreground">
             {error.message || String(error)}
           </pre>

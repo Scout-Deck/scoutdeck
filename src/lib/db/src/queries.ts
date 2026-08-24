@@ -1,5 +1,5 @@
 import { and, desc, eq } from "drizzle-orm";
-import { db } from "./client";
+import { getDb } from "./client";
 import {
   DEFAULT_PROFILE_ID,
   type OpportunityRow,
@@ -85,6 +85,7 @@ function toApiProfile(row: ProfileRow): ApiProfile {
 }
 
 async function getSavedIds(): Promise<Set<string>> {
+  const db = getDb();
   const rows = await db.select().from(savedOpportunitiesTable);
   return new Set(rows.map((row) => row.opportunityId));
 }
@@ -93,6 +94,7 @@ export async function listOpportunities(params?: {
   type?: string | null;
   userSubmittedOnly?: boolean;
 }): Promise<ApiOpportunity[]> {
+  const db = getDb();
   const savedIds = await getSavedIds();
   const conditions = [];
 
@@ -116,6 +118,7 @@ export async function listOpportunities(params?: {
 export async function getOpportunity(
   id: string,
 ): Promise<ApiOpportunity | null> {
+  const db = getDb();
   const savedIds = await getSavedIds();
   const [row] = await db
     .select()
@@ -130,6 +133,7 @@ export async function submitOpportunity(input: {
   url: string;
   notes?: string;
 }): Promise<ApiOpportunity> {
+  const db = getDb();
   let hostname = "Submitted opportunity";
   try {
     hostname = new URL(input.url).hostname.replace(/^www\./, "");
@@ -177,6 +181,7 @@ function defaultProfileRow(): ProfileRow {
 }
 
 export async function getProfile(): Promise<ApiProfile> {
+  const db = getDb();
   const [row] = await db
     .select()
     .from(profilesTable)
@@ -187,6 +192,7 @@ export async function getProfile(): Promise<ApiProfile> {
 }
 
 export async function updateProfile(input: ProfileInput): Promise<ApiProfile> {
+  const db = getDb();
   const current = await getProfile();
   const merged = { ...current, ...input };
 
@@ -224,6 +230,7 @@ export async function updateProfile(input: ProfileInput): Promise<ApiProfile> {
 }
 
 export async function listSavedOpportunities(): Promise<ApiOpportunity[]> {
+  const db = getDb();
   const savedIds = await getSavedIds();
   if (savedIds.size === 0) {
     return [];
@@ -244,6 +251,7 @@ export async function listSavedOpportunities(): Promise<ApiOpportunity[]> {
 }
 
 export async function saveOpportunity(id: string): Promise<boolean> {
+  const db = getDb();
   const opportunity = await getOpportunity(id);
   if (!opportunity) {
     return false;
@@ -258,6 +266,7 @@ export async function saveOpportunity(id: string): Promise<boolean> {
 }
 
 export async function unsaveOpportunity(id: string): Promise<void> {
+  const db = getDb();
   await db
     .delete(savedOpportunitiesTable)
     .where(eq(savedOpportunitiesTable.opportunityId, id));

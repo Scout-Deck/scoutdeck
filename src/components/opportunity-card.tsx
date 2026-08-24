@@ -19,22 +19,23 @@ function deadlineLabel(deadline: string | null) {
 
 export function OpportunityCard({ opportunity, index = 0 }: { opportunity: Opportunity; index?: number }) {
   const queryClient = useQueryClient();
-  const [saved, setSaved] = useState(opportunity.isSaved);
+  const [savedOverride, setSavedOverride] = useState<boolean | null>(null);
   const [justSaved, setJustSaved] = useState(false);
   const save = useSaveOpportunity();
   const unsave = useUnsaveOpportunity();
   const busy = save.isPending || unsave.isPending;
+  const saved = savedOverride ?? opportunity.isSaved;
 
   const toggleSave = (event: MouseEvent) => {
     event.preventDefault();
     event.stopPropagation();
     const next = !saved;
-    setSaved(next);
+    setSavedOverride(next);
     setJustSaved(next);
     window.setTimeout(() => setJustSaved(false), 900);
     const mutation = next ? save : unsave;
     mutation.mutate({ id: opportunity.id }, {
-      onError: () => setSaved(!next),
+      onError: () => setSavedOverride(null),
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getListOpportunitiesQueryKey() });
         queryClient.invalidateQueries({ queryKey: getListSavedOpportunitiesQueryKey() });
