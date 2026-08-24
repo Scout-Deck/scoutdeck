@@ -19,13 +19,13 @@ export default function Home() {
   const [query, setQuery] = useState('');
   const opportunitiesQuery = useListOpportunities();
   const profileQuery = useGetProfile();
-  const opportunities = opportunitiesQuery.data ?? [];
-  const filtered = useMemo(() => opportunities.filter((item) => {
+  const opportunities = opportunitiesQuery.data;
+  const filtered = useMemo(() => (opportunities ?? []).filter((item) => {
     const matchesFilter = filter === 'All' || typeLabels[item.type] === filter;
     const haystack = `${item.title} ${item.organization} ${item.summary} ${item.requiredSkills.join(' ')}`.toLowerCase();
     return matchesFilter && haystack.includes(query.toLowerCase());
   }), [filter, opportunities, query]);
-  const firstName = profileQuery.data?.name?.split(' ')[0] ?? 'there';
+  const firstName = profileQuery.data?.name?.split(' ')[0] || 'there';
 
   return (
     <div>
@@ -39,7 +39,7 @@ export default function Home() {
         </div>
         <div className="relative mt-8 flex items-center gap-3 border-t border-primary-foreground/15 pt-5 text-xs text-primary-foreground/70">
           <Sparkles size={15} className="text-accent" />
-          <span>{opportunities.length > 0 ? `${opportunities.length} signals in your orbit` : 'Your first signals are on their way'}</span>
+          <span>{opportunities?.length ? `${opportunities.length} signals in your orbit` : 'Your first signals are on their way'}</span>
           <span className="ml-auto font-mono-label text-[10px] uppercase tracking-[0.12em]">Updated just now</span>
         </div>
       </section>

@@ -26,16 +26,19 @@ export default function OpportunityDetail() {
   const queryClient = useQueryClient();
   const query = useGetOpportunity(id, { query: { queryKey: getGetOpportunityQueryKey(id), enabled: Boolean(id) } });
   const opportunity = query.data;
-  const [saved, setSaved] = useState<boolean | null>(null);
+  const [savedOverride, setSavedOverride] = useState<{ id: string; value: boolean } | null>(null);
   const save = useSaveOpportunity();
   const unsave = useUnsaveOpportunity();
-  const isSaved = saved ?? opportunity?.isSaved ?? false;
+  const isSaved = savedOverride?.id === id
+    ? savedOverride.value
+    : opportunity?.isSaved ?? false;
+
   const toggleSave = () => {
     if (!opportunity) return;
     const next = !isSaved;
-    setSaved(next);
+    setSavedOverride({ id, value: next });
     const mutation = next ? save : unsave;
-    mutation.mutate({ id: opportunity.id }, { onError: () => setSaved(!next), onSuccess: () => {
+    mutation.mutate({ id: opportunity.id }, { onError: () => setSavedOverride(null), onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: getGetOpportunityQueryKey(opportunity.id) });
       queryClient.invalidateQueries({ queryKey: getListOpportunitiesQueryKey() });
       queryClient.invalidateQueries({ queryKey: getListSavedOpportunitiesQueryKey() });

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { useQueryClient } from '@tanstack/react-query';
 import { Check, CircleHelp, Save, UserRound } from 'lucide-react';
 import { getGetProfileQueryKey, useGetProfile, useUpdateProfile, type ProfileInput } from '@/lib/api-client';
@@ -34,7 +34,7 @@ export default function Profile() {
   const queryClient = useQueryClient();
   const [savedNotice, setSavedNotice] = useState(false);
   const form = useForm<ProfileForm>({ defaultValues: { name: '', educationLevel: '', fieldOfStudy: '', skills: '', interests: '', location: '', remoteOk: true, opportunityTypes: ['internship', 'fellowship', 'job'], experienceLevel: 'student' } });
-  const values = form.watch();
+  const values = useWatch({ control: form.control });
   const completion = useMemo(() => {
     const checks = [values.name, values.educationLevel, values.fieldOfStudy, values.skills, values.interests, values.location, values.opportunityTypes?.length, values.experienceLevel];
     return Math.round((checks.filter(Boolean).length / checks.length) * 100);
