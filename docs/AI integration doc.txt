@@ -1,0 +1,114 @@
+## AI Integration
+
+The next major feature is integrating an AI provider into the opportunity-scouting flow.
+
+### Intended flow
+
+1. User signs up/logs in through Supabase Auth.
+2. User provides profile/onboarding information.
+3. Profile information is stored in the `profiles` table.
+4. The server retrieves the authenticated user's profile from Supabase.
+5. The profile data is sent **server-side** to the AI API.
+6. The AI analyzes the user's background, skills, interests, education, experience, and other relevant profile fields.
+7. The AI is used to help identify/rank/match relevant opportunities.
+8. Relevant opportunity results can then be stored in the `opportunities` table.
+9. Saved opportunities continue to use the `saved_opportunities` relationship.
+
+### AI providers
+
+Primary model:
+
+* **Groq — `gpt-oss-120b`**
+
+Fallback model:
+
+* **Gemini — `gemini-3.5-flash`**
+
+The application should use Groq as the primary provider and automatically fall back to Gemini if the primary AI request fails because of provider errors, availability, rate limits, or similar transient failures.
+
+### Architecture
+
+Keep AI calls **server-side**.
+
+Do NOT expose Groq or Gemini API keys to the browser.
+
+Recommended flow:
+
+```text
+Client
+  ↓
+Next.js Route Handler / Server Action
+  ↓
+Authenticate user with Supabase
+  ↓
+Fetch user's profile from Supabase
+  ↓
+Build validated AI input
+  ↓
+Groq (gpt-oss-120b)
+  ↓
+if failure → Gemini (gemini-3.5-flash)
+  ↓
+Validate/parse AI response
+  ↓
+Return structured result to client
+```
+
+The client should never directly call Groq or Gemini.
+
+### API design
+
+Prefer a dedicated server endpoint for the AI operation rather than mixing AI logic into the profile CRUD route.
+
+For example:
+
+```text
+/api/profile
+```
+
+Handles profile retrieval/update.
+
+```text
+/api/opportunities
+```
+
+Handles opportunity-related operations.
+
+```text
+/api/opportunities/scout
+```
+
+or a similarly descriptive endpoint can handle the AI scouting operation.
+
+The exact route can follow the existing project conventions, but keep responsibilities separated.
+
+### Important implementation requirements
+
+* Use the authenticated Supabase user rather than accepting an arbitrary `user_id` from the client.
+* Fetch profile data server-side.
+* Validate the data before sending it to the model.
+* Keep AI provider keys in environment variables.
+* Create a small provider abstraction so the rest of the application does not depend directly on Groq/Gemini SDK calls.
+* Return structured JSON rather than relying on free-form AI text.
+* Validate the AI response before using it or inserting it into Supabase.
+* Implement Groq → Gemini fallback in one central AI service rather than duplicating fallback logic across route handlers.
+* Do not expose provider API keys or internal provider errors to the client.
+
+### Environment variables
+
+Expected configuration will be along the lines of:
+
+```env
+GROQ_API_KEY=...
+GEMINI_API_KEY=...
+```
+
+Use the actual variable names already present in the project if they differ.
+
+### Goal
+
+The MVP should establish a reliable pipeline:
+
+**User profile → Supabase → server-side AI → structured opportunity recommendations → Supabase**
+
+Keep the AI integration modular so the model/provider can be changed later without rewriting the application/business logic.

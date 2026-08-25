@@ -43,11 +43,11 @@ export function OpportunityCard({ opportunity, index = 0 }: { opportunity: Oppor
     });
   };
   return (
-    <div className={cn('scout-rise group relative rounded-[22px] border border-card-border bg-card shadow-[0_8px_0_hsl(var(--foreground)/.045)] transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-[0_12px_0_hsl(var(--foreground)/.07)]', `scout-rise-${Math.min(index + 1, 4)}`)} data-testid={`card-opportunity-${opportunity.id}`}>
-      <Link href={`/opportunities/${opportunity.id}`} className="focus-ring block rounded-[22px] p-5 md:p-6" data-testid={`link-opportunity-${opportunity.id}`}>
+    <div className={cn('scout-rise group relative border-y border-card-border bg-card transition-transform duration-300 hover:translate-x-2', `scout-rise-${Math.min(index + 1, 4)}`)} data-testid={`card-opportunity-${opportunity.id}`}>
+      <Link href={`/opportunities/${opportunity.id}`} className="focus-ring block p-5 md:p-6" data-testid={`link-opportunity-${opportunity.id}`}>
       <div className="flex items-start justify-between gap-4">
         <div className="flex min-w-0 items-start gap-3">
-          <span className="mt-0.5 grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 font-mono-label text-[11px] font-medium text-primary">{opportunity.organization.slice(0, 2).toUpperCase()}</span>
+          <span className="mt-0.5 grid size-10 shrink-0 place-items-center rounded-full bg-primary font-mono-label text-[11px] font-medium text-primary-foreground">{opportunity.organization.slice(0, 2).toUpperCase()}</span>
           <div className="min-w-0">
             <p className="truncate text-xs font-medium text-muted-foreground">{opportunity.organization}</p>
             <h3 className="mt-1 text-[17px] font-semibold leading-tight tracking-[-0.025em] text-foreground md:text-lg">{opportunity.title}</h3>
@@ -56,7 +56,7 @@ export function OpportunityCard({ opportunity, index = 0 }: { opportunity: Oppor
         <span className="size-9 shrink-0" aria-hidden="true" />
       </div>
       <div className="mt-5 flex items-center gap-2">
-        <span className="rounded-full bg-secondary px-2.5 py-1 font-mono-label text-[10px] uppercase tracking-[0.08em] text-secondary-foreground">{typeLabels[opportunity.type] ?? opportunity.type}</span>
+        <span className="border-b border-primary px-1 py-1 font-mono-label text-[10px] uppercase tracking-[0.08em] text-secondary-foreground">{typeLabels[opportunity.type] ?? opportunity.type}</span>
         <span className="font-mono-label text-[10px] text-muted-foreground">{opportunity.sourceType === 'user_submitted' ? 'Community lead' : 'Scouted'}</span>
       </div>
       <p className="mt-4 line-clamp-2 text-sm leading-relaxed text-muted-foreground">{opportunity.summary}</p>
@@ -72,7 +72,7 @@ export function OpportunityCard({ opportunity, index = 0 }: { opportunity: Oppor
         <span className="flex items-center gap-1 text-xs font-semibold text-primary opacity-0 transition-opacity group-hover:opacity-100">See why <ArrowUpRight size={14} /></span>
       </div>
       </Link>
-      <button type="button" aria-label={saved ? 'Remove from saved' : 'Save opportunity'} onClick={toggleSave} disabled={busy} className={cn('focus-ring absolute right-5 top-5 grid size-9 place-items-center rounded-full border transition-colors md:right-6 md:top-6', saved ? 'border-accent bg-accent text-accent-foreground' : 'border-border bg-card text-muted-foreground hover:border-primary hover:text-primary')} data-testid={`button-save-opportunity-${opportunity.id}`}>
+      <button type="button" aria-label={saved ? 'Remove from saved' : 'Save opportunity'} onClick={toggleSave} disabled={busy} className={cn('focus-ring absolute right-5 top-5 grid size-9 place-items-center rounded-full border transition-colors md:right-6 md:top-6', saved ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-card text-muted-foreground hover:border-primary hover:text-primary')} data-testid={`button-save-opportunity-${opportunity.id}`}>
         {justSaved ? <Check size={16} className="scout-rise" /> : <Bookmark size={16} fill={saved ? 'currentColor' : 'none'} />}
       </button>
     </div>

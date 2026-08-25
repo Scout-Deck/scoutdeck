@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { GetOpportunityParams } from "@/lib/api-zod";
 import { parsePathParams, withAuthError } from "@/lib/api/validate";
-import { getOpportunity } from "@/lib/db";
+import { getOpportunity } from "@/lib/supabase/repository";
 
 type RouteContext = {
   params: Promise<{ id: string }>;

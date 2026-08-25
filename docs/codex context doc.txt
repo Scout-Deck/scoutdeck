@@ -1,0 +1,134 @@
+## Current Project Context
+
+This project was originally a React app imported from Replit. I then created a fresh Next.js app locally and migrated the `lib` and `src` code from the previous app. There were several mismatches between the old React/Replit setup and the new Next.js setup, so the codebase is currently being cleaned up and aligned with Next.js.
+
+## Supabase Setup Completed
+
+Installed:
+
+- `@supabase/supabase-js`
+- `@supabase/ssr`
+
+Created:
+
+- `lib/supabase/client.js` — browser Supabase client
+- `lib/supabase/server.js` — server Supabase client
+
+Supabase is now the backend/auth provider.
+
+### Database structure
+
+The current database maps to the application schemas as follows:
+
+- `profiles` → `Profile`
+  - One profile row per Supabase Auth user.
+  - Uses the authenticated user's `user_id`.
+
+- `opportunities` → `Opportunity`
+  - Stores opportunities.
+  - `Eligibility` from the original API schema has been flattened into queryable columns such as `education_level`, `experience`, etc.
+
+- `saved_opportunities`
+  - Stores the relationship between a user and an opportunity.
+  - `isSaved` is NOT stored on `opportunities`.
+  - `isSaved` should be derived per request based on the current authenticated user and `saved_opportunities`.
+
+The SQL schema/policies are provided in the attached SQL file.
+
+### Auth decisions
+
+Supabase Auth is being used for the MVP.
+
+The database is designed around:
+
+`auth.users.id → profiles.user_id`
+
+RLS policies assume users can only access/edit their own user-specific data.
+
+The original API did not have an authentication/user concept. That has now been added.
+
+## API work
+
+Existing API routes are being refined to work with the new Supabase structure and Supabase authentication.
+
+For example, the profile route currently supports:
+
+- `GET` → fetch the current user's profile
+- `PATCH` → update the current user's profile
+
+Validation continues to use the existing Zod schemas/helpers where appropriate.
+
+Important:
+Do not reintroduce the old API assumptions where `getProfile()` or similar functions operate without knowing the authenticated user.
+
+## Application flow being implemented
+
+The intended MVP flow is:
+
+1. User signs up/logs in with Supabase Auth.
+2. Supabase creates the authenticated user.
+3. A corresponding `profiles` row is created/updated.
+4. User submits their information through the profile/onboarding form.
+5. Profile data is stored in Supabase.
+6. The stored profile information is provided to the AI API.
+7. AI uses the profile information to find/rank/generate relevant opportunities.
+8. Opportunities are stored in `opportunities`.
+9. Users can save/unsave opportunities through `saved_opportunities`.
+10. `isSaved` is computed from the relationship rather than stored as an opportunity field.
+
+## Auth UI still needed
+
+A login/signup page still needs to be implemented.
+
+Use Supabase Auth rather than introducing Clerk, NextAuth, or custom authentication.
+
+For the MVP, email/password authentication is sufficient.
+
+## Next.js setup changes
+
+The font setup was fixed by moving Google font imports from `globals.css` into `layout.tsx` using `next/font/google`.
+
+The project uses fonts such as:
+
+- Outfit
+- DM Mono
+
+`globals.css` should NOT contain the external Google Fonts `@import`.
+
+The development script was also changed to:
+
+```json
+"dev": "next dev --webpack"
+
+This ensures the --webpack flag is recognized by the current Next.js setup.
+
+Important migration context
+
+This codebase came from a Replit React app and has been migrated into Next.js.
+
+When making further changes:
+
+Prefer Next.js App Router conventions.
+Do not assume the old Replit/Vite setup still exists.
+Avoid reintroducing Vite-specific configuration.
+Keep Supabase server/browser clients separated.
+Use the authenticated Supabase user when accessing user-specific data.
+Respect the existing database/RLS design.
+Do not store isSaved directly on opportunities.
+Avoid unnecessary rewrites; stabilize the current architecture first.
+Current priority
+
+Continue from the existing implementation rather than rebuilding it.
+
+Next priorities:
+
+Verify Supabase server/browser clients.
+Verify authentication/session handling.
+Finish login/signup UI.
+Ensure profile API routes use the authenticated Supabase user.
+Connect the profile form to Supabase.
+Pass the saved profile information to the AI API.
+Implement opportunity persistence and saved opportunities.
+Fix any remaining Next.js migration/build errors.
+
+I'd use **`feat: integrate Supabase auth, database schema, and Next.js setup`** for the commit because it accurately captu

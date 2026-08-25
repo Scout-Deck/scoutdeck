@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { UpdateProfileBody } from "@/lib/api-zod";
 import { parseJsonBody, withAuthError } from "@/lib/api/validate";
-import { getProfile, updateProfile } from "@/lib/db";
+import { getProfile, updateProfile } from "@/lib/supabase/repository";
 
 export async function GET() {
   const result = await withAuthError(() => getProfile());
