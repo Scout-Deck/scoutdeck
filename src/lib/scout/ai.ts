@@ -9,6 +9,7 @@ import {
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
+const AI_TIMEOUT_MS = 18_000;
 
 class ProviderError extends Error {}
 
@@ -21,6 +22,8 @@ async function requestGroq(model: string, system: string, prompt: string): Promi
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) throw new ProviderError('Groq is not configured.');
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
   const response = await fetch(GROQ_URL, {
     method: 'POST',
     headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
@@ -30,7 +33,9 @@ async function requestGroq(model: string, system: string, prompt: string): Promi
       response_format: { type: 'json_object' },
       messages: [{ role: 'system', content: system }, { role: 'user', content: prompt }],
     }),
+    signal: controller.signal,
   });
+  clearTimeout(timeout);
   if (!response.ok) throw new ProviderError('Groq request failed.');
 
   const payload = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
@@ -44,6 +49,8 @@ async function requestGemini(system: string, prompt: string): Promise<unknown> {
   if (!apiKey) throw new ProviderError('Gemini is not configured.');
 
   const model = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
   const response = await fetch(`${GEMINI_URL}/${model}:generateContent?key=${encodeURIComponent(apiKey)}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -52,7 +59,9 @@ async function requestGemini(system: string, prompt: string): Promise<unknown> {
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       generationConfig: { temperature: 0.2, responseMimeType: 'application/json' },
     }),
+    signal: controller.signal,
   });
+  clearTimeout(timeout);
   if (!response.ok) throw new ProviderError('Gemini request failed.');
 
   const payload = (await response.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
