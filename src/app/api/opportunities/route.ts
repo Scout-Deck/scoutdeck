@@ -4,7 +4,7 @@ import {
   SubmitOpportunityBody,
 } from "@/lib/api-zod";
 import { parseJsonBody, parseQueryParams, withAuthError } from "@/lib/api/validate";
-import { listOpportunities, submitOpportunity } from "@/lib/db";
+import { listOpportunities, submitOpportunity } from "@/lib/supabase/repository";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);

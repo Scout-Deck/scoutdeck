@@ -63,6 +63,7 @@ create table opportunities (
   deadline timestamptz,
   compensation text,
   source_type opportunity_source_type not null default 'scraped',
+  is_prefetched boolean not null default false,
   required_skills text[] not null default '{}',
 
   -- flattened Eligibility
@@ -79,6 +80,7 @@ create table opportunities (
 
 create index opportunities_type_idx on opportunities(type);
 create index opportunities_source_type_idx on opportunities(source_type);
+create index opportunities_prefetched_idx on opportunities(is_prefetched);
 create index opportunities_deadline_idx on opportunities(deadline);
 
 alter table opportunities enable row level security;
@@ -92,6 +94,36 @@ create policy "Users can submit opportunities"
   on opportunities for insert
   to authenticated
   with check (auth.uid() = submitted_by);
+
+-- ============================================================
+-- opportunity_matches (personalised Scout pipeline results)
+-- ============================================================
+
+create table opportunity_matches (
+  profile_id uuid not null references profiles(id) on delete cascade,
+  opportunity_id uuid not null references opportunities(id) on delete cascade,
+  match_score numeric not null check (match_score >= 0 and match_score <= 100),
+  match_reason text not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  primary key (profile_id, opportunity_id)
+);
+
+create index opportunity_matches_profile_idx on opportunity_matches(profile_id);
+
+alter table opportunity_matches enable row level security;
+
+create policy "Users can view their own matches"
+  on opportunity_matches for select
+  using (auth.uid() = profile_id);
+
+create policy "Users can create their own matches"
+  on opportunity_matches for insert
+  with check (auth.uid() = profile_id);
+
+create policy "Users can update their own matches"
+  on opportunity_matches for update
+  using (auth.uid() = profile_id);
 
 -- ============================================================
 -- saved_opportunities (join table — powers /saved, /saved/{id})
@@ -138,4 +170,8 @@ create trigger profiles_set_updated_at
 
 create trigger opportunities_set_updated_at
   before update on opportunities
+  for each row execute function set_updated_at();
+
+create trigger opportunity_matches_set_updated_at
+  before update on opportunity_matches
   for each row execute function set_updated_at();

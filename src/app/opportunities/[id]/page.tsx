@@ -45,10 +45,10 @@ export default function OpportunityDetail() {
     } });
   };
   if (query.isLoading) return <DetailSkeleton />;
-  if (query.isError || !opportunity) return <div className="py-20 text-center"><p className="font-mono-label text-[10px] uppercase tracking-[.18em] text-destructive">Signal unavailable</p><h1 className="mt-3 text-2xl font-semibold">This trail has gone cold.</h1><Link href="/" className="focus-ring mt-6 inline-flex rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" data-testid="link-back-discover">Back to discover</Link></div>;
+  if (query.isError || !opportunity) return <div className="py-20 text-center"><p className="font-mono-label text-[10px] uppercase tracking-[.18em] text-destructive">Signal unavailable</p><h1 className="mt-3 text-2xl font-semibold">This trail has gone cold.</h1><Link href="/dashboard" className="focus-ring mt-6 inline-flex rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" data-testid="link-back-discover">Back to discover</Link></div>;
   return (
     <article>
-      <button type="button" onClick={() => router.push('/')} className="focus-ring mb-8 inline-flex items-center gap-2 rounded-full text-xs font-semibold text-muted-foreground hover:text-foreground" data-testid="button-back-opportunities"><ArrowLeft size={15} /> Back to shortlist</button>
+      <button type="button" onClick={() => router.push('/dashboard')} className="focus-ring mb-8 inline-flex items-center gap-2 rounded-full text-xs font-semibold text-muted-foreground hover:text-foreground" data-testid="button-back-opportunities"><ArrowLeft size={15} /> Back to shortlist</button>
       <div className="grid gap-8 lg:grid-cols-[1fr_340px] lg:items-start">
         <div>
           <div className="flex flex-wrap items-center gap-2"><span className="rounded-full bg-secondary px-3 py-1.5 font-mono-label text-[10px] uppercase tracking-[.1em]">{typeLabels[opportunity.type] ?? opportunity.type}</span><span className="font-mono-label text-[10px] text-muted-foreground">{opportunity.sourceType === 'user_submitted' ? 'Community lead' : 'Scouted'}</span></div>

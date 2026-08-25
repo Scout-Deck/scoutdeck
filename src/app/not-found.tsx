@@ -14,7 +14,7 @@ export default function NotFound() {
         <p className="mt-6 font-mono-label text-[10px] uppercase tracking-[.2em] text-primary">No trail here</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-[-.06em]">This page wandered off.</h1>
         <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-muted-foreground">The link you followed doesn&rsquo;t point to a current ScoutDeck route.</p>
-        <Link href="/" className="focus-ring mt-6 inline-flex rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground" data-testid="link-not-found-home">Return to discover</Link>
+        <Link href="/dashboard" className="focus-ring mt-6 inline-flex rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground" data-testid="link-not-found-home">Return to discover</Link>
       </div>
     </div>
   );

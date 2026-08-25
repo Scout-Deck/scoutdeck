@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { withAuthError } from "@/lib/api/validate";
-import { listSavedOpportunities } from "@/lib/db";
+import { listSavedOpportunities } from "@/lib/supabase/repository";
 
 export async function GET() {
   const result = await withAuthError(() => listSavedOpportunities());
