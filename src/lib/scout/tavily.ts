@@ -3,6 +3,7 @@ export type SearchResult = {
   title: string;
   snippet: string;
 };
+const SEARCH_TIMEOUT_MS = 12_000;
 
 type TavilyResponse = {
   results?: Array<{ url?: string; title?: string; content?: string }>;
@@ -15,6 +16,8 @@ export async function searchTavily(query: string): Promise<SearchResult[]> {
   }
 
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), SEARCH_TIMEOUT_MS);
     const response = await fetch('https://api.tavily.com/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -26,7 +29,9 @@ export async function searchTavily(query: string): Promise<SearchResult[]> {
         include_answer: false,
         include_raw_content: false,
       }),
+      signal: controller.signal,
     });
+    clearTimeout(timeout);
 
     if (!response.ok) {
       return [];

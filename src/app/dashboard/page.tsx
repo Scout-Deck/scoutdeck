@@ -6,6 +6,7 @@ import { Filter, RefreshCw, Search, Sparkles } from 'lucide-react';
 import { getListOpportunitiesQueryKey, useGetProfile, useListOpportunities } from '@/lib/api-client';
 import { OpportunityCard, typeLabels } from '@/components/opportunity-card';
 import { useScout } from '@/lib/scout/use-scout';
+import type { Opportunity } from '@/lib/api-client';
 
 const filters = ['All', 'Internship', 'Fellowship', 'Hackathon', 'Scholarship', 'Grant', 'Early career job'];
 
@@ -21,11 +22,28 @@ export default function DashboardPage() {
   const profileQuery = useGetProfile();
   const scout = useScout(async () => queryClient.invalidateQueries({ queryKey: getListOpportunitiesQueryKey() }));
   const opportunityCount = opportunitiesQuery.data?.length ?? 0;
-  const filtered = useMemo(() => (opportunitiesQuery.data ?? []).filter((item) => {
+  const streamed: Opportunity[] = scout.matches.map((match) => ({
+    id: match.opportunity.databaseId ?? match.candidateId,
+    title: match.opportunity.title,
+    organization: match.opportunity.organization ?? 'Unknown organisation',
+    summary: match.opportunity.description ?? 'No description was available from the source.',
+    sourceUrl: match.opportunity.sourceUrl,
+    type: match.opportunity.type,
+    score: match.score,
+    why: match.matchReason,
+    deadline: match.opportunity.deadline,
+    compensation: match.opportunity.stipend,
+    sourceType: 'scraped',
+    requiredSkills: match.opportunity.requiredSkills,
+    eligibility: { educationLevel: match.opportunity.eligibility.educationLevel ?? '', experience: match.opportunity.eligibility.experience ?? '', location: match.opportunity.eligibility.location ?? match.opportunity.location ?? '', remoteOk: match.opportunity.eligibility.remoteOk ?? match.opportunity.isRemote ?? false, otherCriteria: match.opportunity.eligibility.otherCriteria ?? '' },
+    isSaved: false,
+  }));
+  const visible = opportunitiesQuery.data?.length ? opportunitiesQuery.data : streamed;
+  const filtered = useMemo(() => visible.filter((item) => {
     const matchesFilter = filter === 'All' || typeLabels[item.type] === filter;
     const haystack = `${item.title} ${item.organization} ${item.summary} ${item.requiredSkills.join(' ')}`.toLowerCase();
     return matchesFilter && haystack.includes(query.toLowerCase());
-  }), [filter, opportunitiesQuery.data, query]);
+  }), [filter, query, visible]);
   const firstName = profileQuery.data?.name?.split(' ')[0] || 'there';
 
   return <div>

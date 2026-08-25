@@ -61,7 +61,7 @@ export const ListOpportunitiesResponse = zod.array(ListOpportunitiesResponseItem
  * @summary Submit an opportunity URL
  */
 export const SubmitOpportunityBody = zod.object({
-  "url": zod.string(),
+  "url": zod.string().url(),
   "notes": zod.string().optional()
 })
 
@@ -225,5 +225,4 @@ export const UnsaveOpportunityParams = zod.object({
 })
 
 export const UnsaveOpportunityResponse = zod.void()
-
 
