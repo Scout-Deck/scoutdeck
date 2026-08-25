@@ -1,12 +1,24 @@
-import type { Metadata } from 'next';
-import './globals.css';
-import { Providers } from '@/components/providers';
-import { AppShell } from '@/components/app-shell';
-import { ErrorBoundary } from '@/components/error-boundary';
+import type { Metadata } from "next";
+import "./globals.css";
+import { Providers } from "@/components/providers";
+import { AppShell } from "@/components/app-shell";
+import { ErrorBoundary } from "@/components/error-boundary";
+import { DM_Mono, Outfit } from "next/font/google";
+
+const outfit = Outfit({
+  variable: "--font-outfit",
+  subsets: ["latin"],
+});
+
+const dmMono = DM_Mono({
+  variable: "--font-dm-mono",
+  subsets: ["latin"],
+  weight: ["400", "500"],
+});
 
 export const metadata: Metadata = {
-  title: 'ScoutDeck',
-  description: 'Your weekly scout report of opportunities worth your time.',
+  title: "ScoutDeck",
+  description: "Your weekly scout report of opportunities worth your time.",
 };
 
 // NOTE: In the original CRA/Vite app, <ErrorBoundary> wrapped everything in
@@ -25,7 +37,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="grain min-h-dvh">
+      <body className={`grain min-h-dvh ${outfit.variable} ${dmMono.variable}`}>
         <ErrorBoundary>
           <Providers>
             <AppShell>{children}</AppShell>
