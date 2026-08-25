@@ -6,7 +6,7 @@ import {
   type ScoutCandidate,
   type ScoutProfile,
 } from './types';
-
+import { defaultTypes } from './query-builder';
 function createCandidateId(sourceUrl: string): string {
   return `fallback:${sourceUrl}`;
 }
@@ -37,16 +37,18 @@ export async function getScoutProfile(userId: string): Promise<ScoutProfile> {
 }
 
 export async function getPreFetchedFallback(profile: ScoutProfile): Promise<ScoutCandidate[]> {
+  
   if (profile.opportunityTypes.length === 0) return [];
 
+  const types = profile.opportunityTypes.length > 0 ? profile.opportunityTypes : defaultTypes;
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('opportunities')
     .select('id, title, organization, summary, source_url, type, deadline, compensation, required_skills, education_level, experience, location, remote_ok, other_criteria')
     .eq('is_prefetched', true)
-    .in('type', profile.opportunityTypes)
+    .in('type', types)
     .limit(80);
-
+  
   // A missing fallback column/table should not suppress otherwise good live results.
   if (error || !data) return [];
 
