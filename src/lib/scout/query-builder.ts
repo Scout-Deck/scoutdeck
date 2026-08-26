@@ -9,7 +9,7 @@ const typePhrases: Record<OpportunityType, string> = {
   job: 'entry level job early career role',
 };
 
-const defaultTypes: OpportunityType[] = ['hackathon', 'fellowship', 'internship'];
+export const defaultTypes: OpportunityType[] = ['hackathon', 'fellowship', 'internship'];
 
 function meaningfulTerms(value: string, limit: number): string[] {
   return value

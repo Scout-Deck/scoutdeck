@@ -1,3 +1,5 @@
+import { runWithConcurrency } from "./concurrency";
+
 export type ScrapeSuccess = {
   ok: true;
   url: string;
@@ -18,6 +20,7 @@ type FirecrawlResponse = {
   data?: { markdown?: string; metadata?: { title?: string } };
   error?: string;
 };
+
 
 const SCRAPE_TIMEOUT_MS = 10_000;
 
@@ -62,7 +65,7 @@ export async function scrapeUrl(url: string): Promise<ScrapeResult> {
 }
 
 export async function scrapeAll(urls: string[]): Promise<ScrapeResult[]> {
-  const results = await Promise.allSettled(urls.map(scrapeUrl));
+  const results = await runWithConcurrency(urls, 1, scrapeUrl, 2000);
   return results.map((result, index) => result.status === 'fulfilled'
     ? result.value
     : { ok: false, url: urls[index], error: 'Scrape failed.' });

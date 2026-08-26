@@ -35,8 +35,11 @@ async function requestGroq(model: string, system: string, prompt: string): Promi
     }),
     signal: controller.signal,
   });
-  clearTimeout(timeout);
-  if (!response.ok) throw new ProviderError('Groq request failed.');
+  if (!response.ok) {
+    const errorBody = await response.text().catch(() => '');
+    console.log('[groq] failed:', response.status, errorBody);
+    throw new ProviderError('Groq request failed.');
+  }
 
   const payload = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
   const content = payload.choices?.[0]?.message?.content;
@@ -61,23 +64,78 @@ async function requestGemini(system: string, prompt: string): Promise<unknown> {
     }),
     signal: controller.signal,
   });
-  clearTimeout(timeout);
-  if (!response.ok) throw new ProviderError('Gemini request failed.');
+
+  if (!response.ok) {
+    const errorBody = await response.text().catch(() => '');
+    console.log('[gemini] failed:', response.status, errorBody);
+    throw new ProviderError('Gemini request failed.');
+  }
 
   const payload = (await response.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
   const content = payload.candidates?.[0]?.content?.parts?.map((part) => part.text ?? '').join('');
   if (!content) throw new ProviderError('Gemini returned an empty response.');
+
+  // ai.ts, inside requestGemini, right after parsing
+  if (!content) throw new ProviderError('Gemini returned an empty response.');
+  const parsed = parseJson(content);
+  console.log('[gemini] raw parsed output:', JSON.stringify(parsed));
+  return parsed;
+
+  // return parseJson(content);
+  
+}
+
+const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
+
+async function requestOpenRouter(system: string, prompt: string): Promise<unknown> {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) throw new ProviderError('OpenRouter is not configured.');
+
+  const response = await fetch(OPENROUTER_URL, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'nvidia/nemotron-3-ultra-550b-a55b:free',
+      temperature: 0.2,
+      messages: [
+        // No enforced JSON mode on this model, so we push extra hard in the prompt itself.
+        { role: 'system', content: `${system}\n\nRespond with ONLY raw JSON. No markdown code fences, no explanation, no preamble — the first character of your response must be "{".` },
+        { role: 'user', content: prompt },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text().catch(() => '');
+    console.log('[openrouter] failed:', response.status, errorBody);
+    throw new ProviderError('OpenRouter request failed.');
+  }
+
+  const payload = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
+  const content = payload.choices?.[0]?.message?.content;
+  if (!content) throw new ProviderError('OpenRouter returned an empty response.');
   return parseJson(content);
 }
+
 
 async function generateStructured<T>(schema: z.ZodType<T>, system: string, prompt: string, model: string): Promise<T> {
   try {
     return schema.parse(await requestGroq(model, system, prompt));
   } catch (groqError) {
+    console.log('[ai] groq failed, trying gemini:', groqError);
     try {
       return schema.parse(await requestGemini(system, prompt));
-    } catch {
-      throw groqError instanceof Error ? groqError : new ProviderError('AI request failed.');
+    } catch (geminiError) {
+      console.log('[ai] gemini also failed, trying openrouter:', geminiError);
+      try {
+        return schema.parse(await requestOpenRouter(system, prompt));
+      } catch (openRouterError) {
+        console.log('[ai] openrouter also failed:', openRouterError);
+        throw groqError instanceof Error ? groqError : new ProviderError('AI request failed.');
+      }
     }
   }
 }
@@ -91,7 +149,7 @@ export async function extractOpportunity(input: { url: string; markdown: string 
     eligibility: { educationLevel: 'string|null', experience: 'string|null', location: 'string|null', remoteOk: 'boolean|null', otherCriteria: 'string|null' },
     requiredSkills: ['string'], location: 'string|null', isRemote: 'boolean|null', deadline: 'string|null',
     experienceLevel: 'student|recent_grad|early_career|null', stipend: 'string|null', confidence: 'high|medium|low',
-  })}\n\nSource URL: ${input.url}\n\nSource text:\n${input.markdown.slice(0, 18_000)}`;
+  })}\n\nSource URL: ${input.url}\n\nSource text:\n${input.markdown.slice(0, 7_000)}`;
 
   const extracted = await generateStructured(ExtractedOpportunitySchema, extractionSystem, prompt, 'openai/gpt-oss-20b');
   return { ...extracted, sourceUrl: input.url };
