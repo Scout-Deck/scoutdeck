@@ -19,6 +19,9 @@ const dmMono = DM_Mono({
 export const metadata: Metadata = {
   title: "ScoutDeck — Find your direction",
   description: "Opportunity intelligence for people in motion.",
+  icons: {
+    icon: "/icon.jpg",
+  },
 };
 
 // NOTE: In the original CRA/Vite app, <ErrorBoundary> wrapped everything in

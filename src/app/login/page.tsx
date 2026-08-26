@@ -65,7 +65,8 @@ export default function LoginPage() {
   return (
     <main className="grain grid min-h-dvh place-items-center bg-background p-6">
       <section className="w-full max-w-md rounded-[28px] border border-card-border bg-card p-7 shadow-[0_10px_0_hsl(var(--foreground)/.06)] sm:p-9">
-        <div className="grid size-11 place-items-center rounded-xl bg-primary text-primary-foreground"><Compass size={22} /></div>
+        {/* <div className="grid size-11 place-items-center rounded-xl bg-primary text-primary-foreground"><Compass size={22} /></div> */}
+        <img src="/icon.jpg" alt="icon" className='size-10' />
         <p className="mt-6 font-mono-label text-[10px] uppercase tracking-[.18em] text-primary">ScoutDeck</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-[-.06em]">{mode === 'sign-in' ? 'Welcome back.' : 'Start your search.'}</h1>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Save your profile, then we&rsquo;ll scout opportunities that deserve your attention.</p>
