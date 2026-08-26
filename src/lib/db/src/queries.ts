@@ -150,7 +150,7 @@ export async function submitOpportunity(input: {
       organization: hostname,
       summary: input.notes?.trim() || "User submitted opportunity pending review.",
       sourceUrl: input.url,
-      type: "job",
+      type: "fellowship",
       score: 50,
       why: "Submitted by you for review.",
       deadline: null,

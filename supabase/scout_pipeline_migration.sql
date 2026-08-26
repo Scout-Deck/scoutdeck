@@ -1,6 +1,12 @@
 -- Apply this once to an existing ScoutDeck Supabase project after schema.sql.
 -- It is idempotent and adds the storage used by /api/opportunities/scout.
 
+alter type opportunity_type add value if not exists 'builder_program';
+alter type opportunity_type add value if not exists 'ambassador_program';
+-- PostgreSQL cannot safely remove enum values in-place. Legacy internship/job
+-- values remain in an existing database for compatibility, but the app no
+-- longer accepts, searches, or displays them.
+
 alter table opportunities
   add column if not exists is_prefetched boolean not null default false;
 

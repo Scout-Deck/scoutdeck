@@ -3,11 +3,11 @@
 import { useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Bookmark, Compass, LogOut, Plus, UserRound } from 'lucide-react';
+import { Bookmark, Compass, LogOut, Plus } from 'lucide-react';
 import { SubmitOpportunityModal } from '@/components/submit-opportunity-modal';
 import { createClient } from '@/lib/supabase/client';
 
-const navigation = [{ href: '/dashboard', label: 'Signal field', icon: Compass }, { href: '/saved', label: 'Saved routes', icon: Bookmark }, { href: '/profile', label: 'Profile', icon: UserRound }];
+const navigation = [{ href: '/dashboard', label: 'Signal field', icon: Compass }, { href: '/saved', label: 'Saved routes', icon: Bookmark }];
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();

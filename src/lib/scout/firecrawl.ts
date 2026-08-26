@@ -62,8 +62,19 @@ export async function scrapeUrl(url: string): Promise<ScrapeResult> {
 }
 
 export async function scrapeAll(urls: string[]): Promise<ScrapeResult[]> {
-  const results = await Promise.allSettled(urls.map(scrapeUrl));
-  return results.map((result, index) => result.status === 'fulfilled'
-    ? result.value
-    : { ok: false, url: urls[index], error: 'Scrape failed.' });
+  const results: ScrapeResult[] = new Array(urls.length);
+  let nextIndex = 0;
+  const workerCount = Math.min(4, urls.length);
+  await Promise.all(Array.from({ length: workerCount }, async () => {
+    while (nextIndex < urls.length) {
+      const index = nextIndex;
+      nextIndex += 1;
+      try {
+        results[index] = await scrapeUrl(urls[index]);
+      } catch {
+        results[index] = { ok: false, url: urls[index], error: 'Scrape failed.' };
+      }
+    }
+  }));
+  return results;
 }

@@ -46,33 +46,37 @@ Enough good (non-"low"-confidence) results?
 
 ## Build order (do this in sequence, not all at once)
 
-1. **Query builder** — turn a profile into search queries. Build one query
-   per preferred opportunity type (hackathon, fellowship, etc.), not one
-   blended query — a single query mixing every skill/interest/type reads as
-   noise to a search engine and returns weak results. Cap skills/interests to
-   a few strong terms per query rather than dumping the whole profile in.
+1. **Query builder** — turn a profile into search intents. Build two focused
+   queries per preferred opportunity type (fellowship, builder
+   program, ambassador program, hackathon, scholarship, grant, or early-career
+   role): a direct current-applications query and a discovery query for open
+   calls or cohorts. Do not blend every preferred type into one search. Cap
+   skills/interests to a few strong terms per query rather than dumping the
+   whole profile in.
 
 2. **Tavily client** — wraps the search API. Must never throw on a bad/empty
    response for one query; return an empty array instead so one weak query
    doesn't take down the whole multi-query fan-out. Run all per-type queries
-   in parallel, dedupe results by URL.
+   in parallel, canonicalize and dedupe URLs, then select a source-diverse
+   shortlist that favours current application pages over stale social posts.
 
-3. **Firecrawl client** — scrapes each URL Tavily returns. Enforce a hard
-   per-URL timeout (~8–10s) with `AbortController`. Use `Promise.allSettled`
-   (never `Promise.all`) across the batch — one slow or broken site must
-   never sink the whole scrape. Failures come back as a typed
+3. **Firecrawl client** — scrapes the selected URLs with bounded concurrency.
+   Enforce a hard per-URL timeout (~8–10s) with `AbortController`. One slow
+   or broken site must never sink the batch. Failures come back as a typed
    `{ ok: false, error }` result, not a thrown exception.
 
 4. **Extraction agent** — `gpt-oss-20b` via Groq. One call per successfully
    scraped page. Prompt must force strict JSON output matching the
    opportunity schema (title, type, sourceUrl, eligibility, requiredSkills,
    location, isRemote, deadline, experienceLevel, stipend, description,
-   confidence). Every field except title/type/sourceUrl is nullable — the
+   application status, confidence). Every field except title/type/sourceUrl is nullable — the
    model must never invent a value that isn't in the source text. Validate
    every response with Zod before it's used; retry once on validation
    failure, then drop that URL if it fails again. Include a `confidence`
-   field ("high"/"medium"/"low") so the orchestrator can judge whether the
-   live pool is good enough on its own.
+   field ("high"/"medium"/"low") and explicit application status
+   (open/closed/unknown) so the orchestrator can reject known-closed or
+   expired listings. Extraction is intentionally rate-limit-aware: wider
+   search does not mean unbounded parallel LLM calls.
 
 5. **Fallback pool** — a function that queries the pre-fetched Supabase
    dataset (40–80 hand-picked, pre-extracted opportunities), filtered by the

@@ -101,7 +101,7 @@ export async function listOpportunities(params?: { type?: string | null; userSub
   if (error) throw new Error('Unable to load your opportunities.');
   return (data ?? []).flatMap((match) => {
     const opportunity = match.opportunities as unknown as OpportunityRow | null;
-    return opportunity ? [toOpportunity(opportunity, selectedSavedIds, match)] : [];
+    return opportunity && validTypes.has(opportunity.type) ? [toOpportunity(opportunity, selectedSavedIds, match)] : [];
   });
 }
 
@@ -111,10 +111,10 @@ export async function getOpportunity(id: string): Promise<ApiOpportunity | null>
   const { data, error } = await supabase.from('opportunity_matches').select('match_score, match_reason, opportunities!inner(*)').eq('profile_id', userId).eq('opportunity_id', id).maybeSingle();
   if (error) throw new Error('Unable to load the opportunity.');
   const opportunity = data?.opportunities as unknown as OpportunityRow | null;
-  return opportunity ? toOpportunity(opportunity, await savedIds(userId), data) : null;
+  return opportunity && validTypes.has(opportunity.type) ? toOpportunity(opportunity, await savedIds(userId), data) : null;
 }
 
-export async function submitOpportunity(input: { url: string; notes?: string }): Promise<ApiOpportunity> {
+export async function submitOpportunity(input: { url: string; type: OpportunityType; notes?: string }): Promise<ApiOpportunity> {
   const userId = await requireUserId();
   const supabase = await createClient();
   let hostname = 'Submitted opportunity';
@@ -123,7 +123,7 @@ export async function submitOpportunity(input: { url: string; notes?: string }):
   } catch {
     throw new Error('Please provide a valid opportunity URL.');
   }
-  const { data, error } = await supabase.from('opportunities').insert({ title: hostname, organization: hostname, summary: input.notes?.trim() || 'User submitted opportunity pending review.', source_url: input.url, type: 'job', score: 50, why: 'Submitted by you for review.', source_type: 'user_submitted', submitted_by: userId }).select().single();
+  const { data, error } = await supabase.from('opportunities').insert({ title: hostname, organization: hostname, summary: input.notes?.trim() || 'User submitted opportunity pending review.', source_url: input.url, type: input.type, score: 50, why: 'Submitted by you for review.', source_type: 'user_submitted', submitted_by: userId }).select().single();
   if (error || !data) throw new Error('Unable to submit the opportunity.');
   return toOpportunity(data as OpportunityRow, new Set());
 }
@@ -135,7 +135,7 @@ export async function listSavedOpportunities(): Promise<ApiOpportunity[]> {
   if (error) throw new Error('Unable to load saved opportunities.');
   return (data ?? []).flatMap((row) => {
     const opportunity = row.opportunities as unknown as OpportunityRow | null;
-    return opportunity ? [toOpportunity(opportunity, new Set([opportunity.id]))] : [];
+    return opportunity && validTypes.has(opportunity.type) ? [toOpportunity(opportunity, new Set([opportunity.id]))] : [];
   });
 }
 

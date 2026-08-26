@@ -9,18 +9,18 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 
-type SubmitValues = { url: string; notes: string };
+type SubmitValues = { url: string; type: 'fellowship' | 'builder_program' | 'ambassador_program' | 'hackathon' | 'scholarship' | 'grant'; notes: string };
 type Props = { open: boolean; onOpenChange: (open: boolean) => void };
 
 export function SubmitOpportunityModal({ open, onOpenChange }: Props) {
   const queryClient = useQueryClient();
   const [submittedTitle, setSubmittedTitle] = useState('');
-  const form = useForm<SubmitValues>({ defaultValues: { url: '', notes: '' } });
+  const form = useForm<SubmitValues>({ defaultValues: { url: '', type: 'fellowship', notes: '' } });
   const submit = useSubmitOpportunity();
 
   if (!open) return null;
   const onSubmit = (values: SubmitValues) => {
-    submit.mutate({ data: { url: values.url, notes: values.notes || undefined } }, {
+    submit.mutate({ data: { url: values.url, type: values.type, notes: values.notes || undefined } }, {
       onSuccess: (opportunity) => {
         setSubmittedTitle(opportunity.title);
         queryClient.invalidateQueries({ queryKey: getListOpportunitiesQueryKey() });
@@ -55,6 +55,12 @@ export function SubmitOpportunityModal({ open, onOpenChange }: Props) {
                     <FormLabel className="flex items-center gap-2 text-xs font-semibold"><Link2 size={14} /> Opportunity link</FormLabel>
                     <FormControl><Input {...field} type="url" placeholder="https://..." className="mt-2 h-11 rounded-xl bg-background" data-testid="input-opportunity-url" /></FormControl>
                     <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="type" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs font-semibold">Opportunity type</FormLabel>
+                    <FormControl><select {...field} className="focus-ring mt-2 h-11 w-full rounded-xl border border-input bg-background px-3 text-sm outline-none"><option value="fellowship">Fellowship</option><option value="builder_program">Builder program</option><option value="ambassador_program">Ambassador program</option><option value="hackathon">Hackathon</option><option value="scholarship">Scholarship</option><option value="grant">Grant</option></select></FormControl>
                   </FormItem>
                 )} />
                 <FormField control={form.control} name="notes" render={({ field }) => (

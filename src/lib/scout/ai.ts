@@ -9,7 +9,7 @@ import {
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
-const AI_TIMEOUT_MS = 18_000;
+const AI_TIMEOUT_MS = 15_000;
 
 class ProviderError extends Error {}
 
@@ -24,50 +24,56 @@ async function requestGroq(model: string, system: string, prompt: string): Promi
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
-  const response = await fetch(GROQ_URL, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model,
-      temperature: 0.2,
-      response_format: { type: 'json_object' },
-      messages: [{ role: 'system', content: system }, { role: 'user', content: prompt }],
-    }),
-    signal: controller.signal,
-  });
-  clearTimeout(timeout);
-  if (!response.ok) throw new ProviderError('Groq request failed.');
+  try {
+    const response = await fetch(GROQ_URL, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model,
+        temperature: 0.2,
+        response_format: { type: 'json_object' },
+        messages: [{ role: 'system', content: system }, { role: 'user', content: prompt }],
+      }),
+      signal: controller.signal,
+    });
+    if (!response.ok) throw new ProviderError('Groq request failed.');
 
-  const payload = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
-  const content = payload.choices?.[0]?.message?.content;
-  if (!content) throw new ProviderError('Groq returned an empty response.');
-  return parseJson(content);
+    const payload = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
+    const content = payload.choices?.[0]?.message?.content;
+    if (!content) throw new ProviderError('Groq returned an empty response.');
+    return parseJson(content);
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 async function requestGemini(system: string, prompt: string): Promise<unknown> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new ProviderError('Gemini is not configured.');
 
-  const model = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
+  const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
-  const response = await fetch(`${GEMINI_URL}/${model}:generateContent?key=${encodeURIComponent(apiKey)}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: system }] },
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.2, responseMimeType: 'application/json' },
-    }),
-    signal: controller.signal,
-  });
-  clearTimeout(timeout);
-  if (!response.ok) throw new ProviderError('Gemini request failed.');
+  try {
+    const response = await fetch(`${GEMINI_URL}/${model}:generateContent?key=${encodeURIComponent(apiKey)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: system }] },
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.2, responseMimeType: 'application/json' },
+      }),
+      signal: controller.signal,
+    });
+    if (!response.ok) throw new ProviderError('Gemini request failed.');
 
-  const payload = (await response.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
-  const content = payload.candidates?.[0]?.content?.parts?.map((part) => part.text ?? '').join('');
-  if (!content) throw new ProviderError('Gemini returned an empty response.');
-  return parseJson(content);
+    const payload = (await response.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
+    const content = payload.candidates?.[0]?.content?.parts?.map((part) => part.text ?? '').join('');
+    if (!content) throw new ProviderError('Gemini returned an empty response.');
+    return parseJson(content);
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 async function generateStructured<T>(schema: z.ZodType<T>, system: string, prompt: string, model: string): Promise<T> {
@@ -86,18 +92,18 @@ const extractionSystem = `You extract opportunity listings from source text. Ret
 
 export async function extractOpportunity(input: { url: string; markdown: string }): Promise<ExtractedOpportunity> {
   const prompt = `Extract one opportunity from this source. Return exactly this JSON shape:\n${JSON.stringify({
-    title: 'string', type: 'internship|fellowship|hackathon|scholarship|grant|job', sourceUrl: input.url,
+    title: 'string', type: 'fellowship|builder_program|ambassador_program|hackathon|scholarship|grant', sourceUrl: input.url,
     organization: 'string|null', description: 'string|null',
     eligibility: { educationLevel: 'string|null', experience: 'string|null', location: 'string|null', remoteOk: 'boolean|null', otherCriteria: 'string|null' },
     requiredSkills: ['string'], location: 'string|null', isRemote: 'boolean|null', deadline: 'string|null',
-    experienceLevel: 'student|recent_grad|early_career|null', stipend: 'string|null', confidence: 'high|medium|low',
-  })}\n\nSource URL: ${input.url}\n\nSource text:\n${input.markdown.slice(0, 18_000)}`;
+    experienceLevel: 'student|recent_grad|early_career|null', stipend: 'string|null', applicationStatus: 'open|closed|unknown', confidence: 'high|medium|low',
+  })}\n\nUse applicationStatus "open" only when the source explicitly says applications or registration are open, active, or accepting. Use "closed" when it explicitly says closed, archived, or past. Otherwise use "unknown".\n\nSource URL: ${input.url}\n\nSource text:\n${input.markdown.slice(0, 5_000)}`;
 
   const extracted = await generateStructured(ExtractedOpportunitySchema, extractionSystem, prompt, 'openai/gpt-oss-20b');
   return { ...extracted, sourceUrl: input.url };
 }
 
-const rankingSystem = `You are ScoutDeck's opportunity-ranking engine. Return only JSON. Rank candidates comparatively. Return no more than five genuine fits. Each matchReason must cite two or three concrete profile facts and specific opportunity details; generic wording is forbidden.`;
+const rankingSystem = `You are ScoutDeck's opportunity-ranking engine. Return only JSON. Rank candidates comparatively. Return no more than five genuine fits. Prefer currently open opportunities and direct application pages. Each matchReason must cite two or three concrete profile facts and specific opportunity details; generic wording is forbidden.`;
 
 export async function rankCandidates(profile: ScoutProfile, candidates: ScoutCandidate[]) {
   const prompt = `Profile:\n${JSON.stringify(profile)}\n\nCandidates:\n${JSON.stringify(candidates.map((candidate) => ({
@@ -111,6 +117,7 @@ export async function rankCandidates(profile: ScoutProfile, candidates: ScoutCan
     isRemote: candidate.isRemote,
     eligibility: candidate.eligibility,
     deadline: candidate.deadline,
+    applicationStatus: candidate.applicationStatus,
   })))}\n\nReturn {"matches":[{"candidateId":"...","score":0-100,"matchReason":"specific explanation"}]}.`;
   return generateStructured(RankingResponseSchema, rankingSystem, prompt, 'openai/gpt-oss-120b');
 }

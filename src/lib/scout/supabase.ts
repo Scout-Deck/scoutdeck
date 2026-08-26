@@ -75,6 +75,7 @@ export async function getPreFetchedFallback(profile: ScoutProfile): Promise<Scou
       deadline: row.deadline,
       experienceLevel: null,
       stipend: row.compensation,
+      applicationStatus: 'unknown' as const,
       confidence: 'high' as const,
     }];
   });

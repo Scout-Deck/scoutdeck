@@ -1,12 +1,12 @@
 import { z } from 'zod';
 
 export const opportunityTypes = [
-  'internship',
   'fellowship',
+  'builder_program',
+  'ambassador_program',
   'hackathon',
   'scholarship',
   'grant',
-  'job',
 ] as const;
 
 export const OpportunityTypeSchema = z.enum(opportunityTypes);
@@ -47,6 +47,7 @@ export const ExtractedOpportunitySchema = z.object({
   deadline: NullableText,
   experienceLevel: z.enum(['student', 'recent_grad', 'early_career']).nullable(),
   stipend: NullableText,
+  applicationStatus: z.enum(['open', 'closed', 'unknown']),
   confidence: z.enum(['high', 'medium', 'low']),
 });
 export type ExtractedOpportunity = z.infer<typeof ExtractedOpportunitySchema>;

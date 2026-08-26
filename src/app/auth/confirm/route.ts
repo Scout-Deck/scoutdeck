@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!supabaseUrl || !supabaseKey) return NextResponse.redirect(authErrorRedirect(request));
 
-  const destination = new URL('/profile', request.url);
+  const destination = new URL('/dashboard', request.url);
   const response = NextResponse.redirect(destination);
   const supabase = createServerClient(supabaseUrl, supabaseKey, {
     cookies: {

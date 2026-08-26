@@ -1,8 +1,8 @@
 import { requireUserId, UnauthorizedError } from '@/lib/supabase/server';
-import { runScoutPipeline } from '@/lib/scout/pipeline';
+import { runScoutPipeline, ScoutProfileRequiredError } from '@/lib/scout/pipeline';
 
 export const runtime = 'nodejs';
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 const encoder = new TextEncoder();
 
@@ -23,6 +23,7 @@ export async function POST() {
 
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
+      const heartbeat = setInterval(() => controller.enqueue(eventMessage('ping', { at: Date.now() })), 15_000);
       void runScoutPipeline({
         userId,
         onProgress(progress) {
@@ -33,10 +34,15 @@ export async function POST() {
         .catch((error: unknown) => {
           console.error('Scout pipeline failed:', error);
           controller.enqueue(eventMessage('error', {
-            message: 'ScoutDeck could not finish this search. Please try again.',
+            message: error instanceof ScoutProfileRequiredError
+              ? error.message
+              : 'ScoutDeck could not finish this search. Please try again.',
           }));
         })
-        .finally(() => controller.close());
+        .finally(() => {
+          clearInterval(heartbeat);
+          controller.close();
+        });
     },
   });
 

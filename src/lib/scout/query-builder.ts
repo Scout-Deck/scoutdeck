@@ -1,41 +1,56 @@
 import type { OpportunityType, ScoutProfile } from './types';
 
-const typePhrases: Record<OpportunityType, string> = {
-  internship: 'internship programme application',
-  fellowship: 'fellowship programme application',
-  hackathon: 'hackathon registration application',
-  scholarship: 'scholarship application',
-  grant: 'grant application',
-  job: 'entry level job early career role',
+const typePhrases: Record<OpportunityType, { primary: string; discovery: string }> = {
+  fellowship: { primary: 'fellowship applications', discovery: 'fellowship open call apply' },
+  builder_program: { primary: 'builder program applications', discovery: 'startup builder cohort apply' },
+  ambassador_program: { primary: 'ambassador program applications', discovery: 'campus ambassador programme apply' },
+  hackathon: { primary: 'hackathon registration', discovery: 'hackathon open registration apply' },
+  scholarship: { primary: 'scholarship applications', discovery: 'scholarship open call apply' },
+  grant: { primary: 'grant applications', discovery: 'grant open call apply' },
 };
 
-const defaultTypes: OpportunityType[] = ['hackathon', 'fellowship', 'internship'];
+const defaultTypes: OpportunityType[] = ['hackathon', 'fellowship', 'builder_program'];
+
+export type SearchIntent = {
+  id: string;
+  type: OpportunityType;
+  lane: 'direct' | 'discovery';
+  query: string;
+};
 
 function meaningfulTerms(value: string, limit: number): string[] {
   return value
-    .split(/[,;\n]/)
+    .split(/[,;\n.!?]/)
     .map((term) => term.trim())
-    .filter(Boolean)
+    .filter((term) => term.length > 1)
     .slice(0, limit);
 }
 
-export function buildSearchQueries(profile: ScoutProfile): string[] {
+function quote(value: string): string {
+  return value.includes(' ') ? `"${value}"` : value;
+}
+
+export function buildSearchQueries(profile: ScoutProfile): SearchIntent[] {
   const types = profile.opportunityTypes.length > 0
     ? profile.opportunityTypes
     : defaultTypes;
-  const skills = profile.skills.filter(Boolean).slice(0, 3);
+  const skills = profile.skills.filter(Boolean).slice(0, 2);
   const interests = meaningfulTerms(profile.interests, 2);
   const context = [
-    ...skills,
-    ...interests,
+    ...skills.map(quote),
+    ...interests.map(quote),
     profile.fieldOfStudy.trim(),
     profile.location.trim(),
-  ].filter(Boolean).slice(0, 6);
+  ].filter(Boolean).slice(0, 5);
+  const audience = [profile.educationLevel.trim(), profile.experienceLevel.replace('_', ' ')].filter(Boolean).join(' ');
+  const year = new Date().getUTCFullYear();
 
-  return types.map((type) => [
-    typePhrases[type],
-    ...context,
-    profile.remoteOk ? 'remote friendly' : '',
-    '2026',
-  ].filter(Boolean).join(' '));
+  return types.flatMap((type) => {
+    const phrase = typePhrases[type];
+    const shared = [...context, audience, profile.remoteOk ? 'remote' : ''].filter(Boolean).join(' ');
+    return [
+      { id: `${type}:direct`, type, lane: 'direct' as const, query: `${year} ${phrase.primary} "applications open" ${shared}`.trim() },
+      { id: `${type}:discovery`, type, lane: 'discovery' as const, query: `${year} ${phrase.discovery} ${shared} deadline`.trim() },
+    ];
+  });
 }

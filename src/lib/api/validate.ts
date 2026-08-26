@@ -52,6 +52,7 @@ export async function withAuthError<T>(fn: () => Promise<T>): Promise<T | NextRe
     if (err instanceof UnauthorizedError) {
       return NextResponse.json({ message: 'Not authenticated' }, { status: 401 });
     }
-    throw err;
+    console.error('API request failed:', err);
+    return NextResponse.json({ message: 'The service is temporarily unavailable. Please try again.' }, { status: 500 });
   }
 }

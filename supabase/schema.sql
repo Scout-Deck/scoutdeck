@@ -3,7 +3,7 @@
 -- ============================================================
 
 create type opportunity_type as enum (
-  'internship', 'fellowship', 'hackathon', 'scholarship', 'grant', 'job'
+  'fellowship', 'builder_program', 'ambassador_program', 'hackathon', 'scholarship', 'grant'
 );
 
 create type opportunity_source_type as enum (

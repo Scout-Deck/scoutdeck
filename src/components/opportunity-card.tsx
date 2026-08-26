@@ -8,7 +8,7 @@ import type { Opportunity } from '@/lib/api-client';
 import { getListOpportunitiesQueryKey, getListSavedOpportunitiesQueryKey, useSaveOpportunity, useUnsaveOpportunity } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
 
-const typeLabels: Record<string, string> = { internship: 'Internship', fellowship: 'Fellowship', hackathon: 'Hackathon', scholarship: 'Scholarship', grant: 'Grant', job: 'Early career job' };
+const typeLabels: Record<string, string> = { fellowship: 'Fellowship', builder_program: 'Builder program', ambassador_program: 'Ambassador program', hackathon: 'Hackathon', scholarship: 'Scholarship', grant: 'Grant' };
 
 function deadlineLabel(deadline: string | null) {
   if (!deadline) return 'No deadline listed';

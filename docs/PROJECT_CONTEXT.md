@@ -187,14 +187,14 @@ profiles (
   experience_level text,
   interests text[],
   location text,
-  preferred_types text[],   -- ['hackathon', 'fellowship', 'internship', ...]
+  preferred_types text[],   -- ['hackathon', 'fellowship', 'builder_program', ...]
   created_at timestamp
 )
 
 opportunities (
   id uuid primary key,
   title text,
-  type text,                -- 'hackathon' | 'fellowship' | 'internship' | etc
+  type text,                -- 'hackathon' | 'fellowship' | 'builder_program' | etc
   source_url text,
   raw_description text,
   eligibility text,
