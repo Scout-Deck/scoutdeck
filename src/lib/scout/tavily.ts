@@ -3,7 +3,10 @@ export type SearchResult = {
   title: string;
   snippet: string;
 };
-const SEARCH_TIMEOUT_MS = 12_000;
+const SEARCH_TIMEOUT_MS = 7_000;
+const MAX_RESULTS_PER_QUERY = 2;
+const MAX_SEARCH_QUERIES = 3;
+export const MAX_SEARCH_TARGETS = 6;
 
 type TavilyResponse = {
   results?: Array<{ url?: string; title?: string; content?: string }>;
@@ -12,7 +15,7 @@ type TavilyResponse = {
 export async function searchTavily(query: string): Promise<SearchResult[]> {
   const apiKey = process.env.TAVILY_API_KEY;
   if (!apiKey) {
-    throw new Error('TAVILY_API_KEY is not configured.');
+    return [];
   }
 
   try {
@@ -25,7 +28,7 @@ export async function searchTavily(query: string): Promise<SearchResult[]> {
         api_key: apiKey,
         query,
         search_depth: 'advanced',
-        max_results: 4,
+        max_results: MAX_RESULTS_PER_QUERY,
         include_answer: false,
         include_raw_content: false,
       }),
@@ -52,10 +55,10 @@ export async function searchTavily(query: string): Promise<SearchResult[]> {
 }
 
 export async function searchAllQueries(queries: string[]): Promise<SearchResult[]> {
-  const responses = await Promise.all(queries.map(searchTavily));
+  const responses = await Promise.all(queries.slice(0, MAX_SEARCH_QUERIES).map(searchTavily));
   const byUrl = new Map<string, SearchResult>();
   for (const result of responses.flat()) {
     if (!byUrl.has(result.url)) byUrl.set(result.url, result);
   }
-  return [...byUrl.values()];
+  return [...byUrl.values()].slice(0, MAX_SEARCH_TARGETS);
 }

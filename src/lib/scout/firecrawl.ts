@@ -1,4 +1,4 @@
-import { runWithConcurrency } from "./concurrency";
+import { runWithConcurrency } from './concurrency';
 
 export type ScrapeSuccess = {
   ok: true;
@@ -22,7 +22,8 @@ type FirecrawlResponse = {
 };
 
 
-const SCRAPE_TIMEOUT_MS = 10_000;
+const SCRAPE_TIMEOUT_MS = 7_000;
+const SCRAPE_CONCURRENCY = 2;
 
 export async function scrapeUrl(url: string): Promise<ScrapeResult> {
   const apiKey = process.env.FIRECRAWL_API_KEY;
@@ -65,7 +66,7 @@ export async function scrapeUrl(url: string): Promise<ScrapeResult> {
 }
 
 export async function scrapeAll(urls: string[]): Promise<ScrapeResult[]> {
-  const results = await runWithConcurrency(urls, 1, scrapeUrl, 2000);
+  const results = await runWithConcurrency(urls, SCRAPE_CONCURRENCY, scrapeUrl);
   return results.map((result, index) => result.status === 'fulfilled'
     ? result.value
     : { ok: false, url: urls[index], error: 'Scrape failed.' });

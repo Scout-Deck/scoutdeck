@@ -35,7 +35,7 @@ The orchestrator is `src/lib/scout/pipeline.ts`.
 
 `getScoutProfile()` loads the authenticated user’s `profiles` row. `buildSearchQueries()` turns their preferred opportunity types, skills, interests, location, and remote preference into one or more search queries.
 
-If a profile has no selected opportunity types, the query builder uses its supported defaults: hackathons, fellowships, and internships.
+If a profile has no selected opportunity types, the query builder uses its supported defaults: hackathons, fellowships, and builder programs.
 
 ### 2. Tavily search
 

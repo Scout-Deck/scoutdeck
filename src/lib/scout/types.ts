@@ -1,12 +1,12 @@
 import { z } from 'zod';
 
 export const opportunityTypes = [
-  'internship',
   'fellowship',
+  'builder_program',
+  'ambassador_program',
   'hackathon',
   'scholarship',
   'grant',
-  'job',
 ] as const;
 
 export const OpportunityTypeSchema = z.enum(opportunityTypes);

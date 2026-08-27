@@ -7,12 +7,12 @@ import {
 } from "drizzle-orm/pg-core";
 
 export const opportunityTypeEnum = pgEnum("opportunity_type", [
-  "internship",
   "fellowship",
+  "builder_program",
+  "ambassador_program",
   "hackathon",
   "scholarship",
   "grant",
-  "job",
 ]);
 
 export const opportunitySourceTypeEnum = pgEnum("opportunity_source_type", [

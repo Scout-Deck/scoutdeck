@@ -45,7 +45,7 @@ AI compares every candidate against your profile and ranks them
 Your top 5 — each with a match score and a specific "why"
 ```
 
-You watch this happen in real time over roughly 30–60 seconds via a live status stream, so it never feels like a black box.
+You watch this happen in real time via a live status stream, so it never feels like a black box. Each run is capped at six focused sources, with bounded scraping and extraction concurrency to suit serverless deployments.
 
 **Always exactly 5 results, or fewer if the pool doesn't support 5 genuinely strong matches.** ScoutDeck won't pad the list with weak opportunities just to hit a round number — showing three great matches beats showing five mediocre ones.
 
@@ -78,7 +78,7 @@ One runtime, one language, no second service to coordinate — a deliberate choi
 
 The whole pitch rests on **live** search and scrape — you watch ScoutDeck search the web and build your list in real time, which is the actual answer to "how is this different from keyword-matching a static list." But live search alone has no floor: if search or scraping underperform for a given profile, a demo could show a thin result at the worst possible moment.
 
-So a small pre-fetched dataset exists as a **silent fallback only**. It's never blended in by default and never mentioned in the interface — it only kicks in if live results come back too thin, and the user-facing experience looks identical either way.
+So a small pre-fetched dataset exists as a **silent fallback only**. It's never blended in by default and never mentioned in the interface — it only kicks in if live results come back too thin, and the user-facing experience looks identical either way. The ranked SSE result is delivered before the authenticated run finishes optional database persistence, so a slow write never holds the shortlist hostage.
 
 ---
 
@@ -100,6 +100,7 @@ src/
     api/
       opportunities/
         scout/route.ts       — authenticated SSE endpoint that runs the pipeline
+      guest/scout/route.ts   — local-only guest SSE endpoint (no database writes)
       profile/                — profile CRUD
   lib/
     scout/
@@ -122,7 +123,7 @@ supabase/
 ```env
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 
 # Search & scrape
 TAVILY_API_KEY=
@@ -134,6 +135,8 @@ GEMINI_API_KEY=
 GEMINI_MODEL=gemini-3.5-flash
 OPENROUTER_API_KEY=
 ```
+
+See [Supabase authentication setup](docs/SUPABASE_AUTH_SETUP.md) for the required Site URL, Redirect URLs, and token-hash confirmation email template.
 
 ---
 
@@ -173,7 +176,7 @@ opportunity_matches (
 
 ## MVP scope
 
-**In scope:** live search + scrape + AI ranking, streamed results, save/unsave, no-auth-required anonymous flow, a pre-fetched fallback dataset as an invisible safety net.
+**In scope:** live search + scrape + AI ranking, streamed results, save/unsave, local-only guest scouting, a pre-fetched fallback dataset as an invisible safety net.
 
 **Explicitly out of scope for now** (the bigger vision, revisited post-hackathon): crowdsourced opportunity submission, community/discussion features, a full AI career-guidance chatbot, and application/deadline tracking.
 

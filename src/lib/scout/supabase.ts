@@ -7,6 +7,8 @@ import {
   type ScoutProfile,
 } from './types';
 import { defaultTypes } from './query-builder';
+
+const MAX_FALLBACK_CANDIDATES = 10;
 function createCandidateId(sourceUrl: string): string {
   return `fallback:${sourceUrl}`;
 }
@@ -21,6 +23,10 @@ export async function getScoutProfile(userId: string): Promise<ScoutProfile> {
 
   if (error) throw new Error('Unable to load your profile.');
   if (!data) throw new Error('Complete your profile before scouting opportunities.');
+  const opportunityTypes = (data.opportunity_types ?? []).flatMap((type) => {
+    const parsed = OpportunityTypeSchema.safeParse(type);
+    return parsed.success ? [parsed.data] : [];
+  });
 
   return ScoutProfileSchema.parse({
     id: data.id,
@@ -31,7 +37,7 @@ export async function getScoutProfile(userId: string): Promise<ScoutProfile> {
     interests: data.interests,
     location: data.location,
     remoteOk: data.remote_ok,
-    opportunityTypes: data.opportunity_types ?? [],
+    opportunityTypes,
     experienceLevel: data.experience_level,
   });
 }
@@ -47,7 +53,7 @@ export async function getPreFetchedFallback(profile: ScoutProfile): Promise<Scou
     .select('id, title, organization, summary, source_url, type, deadline, compensation, required_skills, education_level, experience, location, remote_ok, other_criteria')
     .eq('is_prefetched', true)
     .in('type', types)
-    .limit(80);
+    .limit(MAX_FALLBACK_CANDIDATES);
   
   // A missing fallback column/table should not suppress otherwise good live results.
   if (error || !data) return [];
@@ -96,7 +102,7 @@ export async function persistLiveCandidate(candidate: ScoutCandidate, userId: st
 
   const { data, error } = await supabase
     .from('opportunities')
-    .insert({
+    .upsert({
       title: candidate.title,
       organization: candidate.organization || 'Unknown organisation',
       summary: candidate.description || 'No description was available from the source.',
@@ -115,11 +121,20 @@ export async function persistLiveCandidate(candidate: ScoutCandidate, userId: st
       remote_ok: candidate.isRemote ?? candidate.eligibility.remoteOk ?? false,
       other_criteria: candidate.eligibility.otherCriteria || '',
       submitted_by: userId,
-    })
+    }, { onConflict: 'source_url', ignoreDuplicates: true })
     .select('id')
-    .single();
+    .maybeSingle();
 
-  if (error || !data) throw new Error('Unable to persist scouted opportunities.');
+  if (error) throw new Error('Unable to persist scouted opportunities.');
+  if (!data) {
+    const { data: concurrent, error: concurrentError } = await supabase
+      .from('opportunities')
+      .select('id')
+      .eq('source_url', candidate.sourceUrl)
+      .maybeSingle();
+    if (concurrentError || !concurrent) throw new Error('Unable to persist scouted opportunities.');
+    return { ...candidate, databaseId: concurrent.id };
+  }
   return { ...candidate, databaseId: data.id };
 }
 

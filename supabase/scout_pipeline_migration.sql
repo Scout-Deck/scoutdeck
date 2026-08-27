@@ -1,11 +1,29 @@
 -- Apply this once to an existing ScoutDeck Supabase project after schema.sql.
 -- It is idempotent and adds the storage used by /api/opportunities/scout.
 
+alter type opportunity_type add value if not exists 'builder_program';
+alter type opportunity_type add value if not exists 'ambassador_program';
+-- PostgreSQL cannot safely remove enum values in-place. Legacy categories
+-- remain in an existing database for compatibility, but the app no longer
+-- accepts, searches, or displays them.
+
 alter table opportunities
   add column if not exists is_prefetched boolean not null default false;
 
 create index if not exists opportunities_prefetched_idx
   on opportunities(is_prefetched);
+
+-- Source URLs identify a live listing. Resolve historical duplicates before
+-- adding the uniqueness guarantee used by the live persistence path.
+delete from opportunities older
+using opportunities newer
+where older.source_url = newer.source_url
+  and older.created_at < newer.created_at
+  and not exists (select 1 from opportunity_matches match where match.opportunity_id = older.id)
+  and not exists (select 1 from saved_opportunities saved where saved.opportunity_id = older.id);
+
+create unique index if not exists opportunities_source_url_unique_idx
+  on opportunities(source_url);
 
 create table if not exists opportunity_matches (
   profile_id uuid not null references profiles(id) on delete cascade,

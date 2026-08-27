@@ -1,19 +1,24 @@
 import { extractOpportunity, rankCandidates } from './ai';
-import { scrapeAll } from './firecrawl';
+import { runWithConcurrency } from './concurrency';
+import { scrapeAll, type ScrapeSuccess } from './firecrawl';
 import { buildSearchQueries } from './query-builder';
 import { getPreFetchedFallback, getScoutProfile, persistLiveCandidate, persistMatches } from './supabase';
-import { searchAllQueries } from './tavily';
-import type { RankedScoutMatch, ScoutCandidate, ScoutProgress } from './types';
-import { runWithConcurrency } from './concurrency';
-import type { ScrapeSuccess } from './firecrawl';
+import { searchAllQueries, MAX_SEARCH_TARGETS } from './tavily';
+import type { RankedScoutMatch, ScoutCandidate, ScoutProfile, ScoutProgress } from './types';
 
+export const MIN_VIABLE_RESULTS = 3;
+const EXTRACTION_CONCURRENCY = 2;
+const MAX_SCRAPE_URLS = MAX_SEARCH_TARGETS;
 
-export const MIN_VIABLE_RESULTS = 5;
-const MAX_SCRAPE_URLS = 8;
+type PipelineOptions = {
+  profile: ScoutProfile;
+  onProgress?: (progress: ScoutProgress) => void;
+};
 
 type RunScoutPipelineOptions = {
   userId: string;
   onProgress?: (progress: ScoutProgress) => void;
+  onResult?: (result: ScoutPipelineResult) => void;
 };
 
 export type ScoutPipelineResult = {
@@ -21,7 +26,7 @@ export type ScoutPipelineResult = {
   usedFallback: boolean;
 };
 
-function emit(onProgress: RunScoutPipelineOptions['onProgress'], progress: ScoutProgress) {
+function emit(onProgress: PipelineOptions['onProgress'], progress: ScoutProgress) {
   onProgress?.(progress);
 }
 
@@ -37,97 +42,85 @@ async function extractWithRetry(input: { url: string; markdown: string }) {
   throw lastError;
 }
 
-export async function runScoutPipeline({ userId, onProgress }: RunScoutPipelineOptions): Promise<ScoutPipelineResult> {
-  const profile = await getScoutProfile(userId);
-  emit(onProgress, { stage: 'searching', message: 'Searching the web for opportunities…' });
-
+async function rankLiveCandidates(profile: ScoutProfile, onProgress?: (progress: ScoutProgress) => void): Promise<RankedScoutMatch[]> {
+  emit(onProgress, { stage: 'searching', message: 'Searching a focused set of opportunity sources…' });
   const searchResults = await searchAllQueries(buildSearchQueries(profile));
-  console.log('[scout] tavily urls:', searchResults.length);
   emit(onProgress, {
     stage: 'sources_found',
-    message: `Found ${searchResults.length} sources. Extracting the useful details…`,
+    message: searchResults.length ? `Found ${searchResults.length} promising sources. Reading the details…` : 'No live sources responded. Checking the saved opportunity pool…',
     count: searchResults.length,
   });
 
   emit(onProgress, { stage: 'extracting', message: 'Extracting eligibility, deadlines, and requirements…' });
-  
   const scrapeResults = await scrapeAll(searchResults.slice(0, MAX_SCRAPE_URLS).map((result) => result.url));
-  console.log('[scout] scrape results:', scrapeResults.map((r: any) =>
-  r.ok ? { url: r.url, ok: true } : { url: r.url, ok: false, error: r.error }
-));
+  const successfulScrapes = scrapeResults.filter((result): result is ScrapeSuccess => result.ok);
+  const extractionResults = await runWithConcurrency(
+    successfulScrapes,
+    EXTRACTION_CONCURRENCY,
+    (result) => extractWithRetry({ url: result.url, markdown: result.markdown }),
+  );
+  const liveCandidates: ScoutCandidate[] = extractionResults.flatMap((result, index) => result.status === 'fulfilled'
+    ? [{ ...result.value, candidateId: `live:${index}:${result.value.sourceUrl}`, source: 'live' as const }]
+    : []);
+  const viableCandidates = liveCandidates.filter((candidate) => candidate.confidence !== 'low');
 
-const successfulScrapes = scrapeResults.filter(
-  (result): result is ScrapeSuccess => result.ok
-);
-
-const extractionResults = await runWithConcurrency(
-  successfulScrapes,
-  1,
-  (result) => extractWithRetry({ url: result.url, markdown: result.markdown }),
-  4000 // wait 4 seconds between each extraction call
-);
-  console.log('[scout] scrape ok:', scrapeResults.filter(r => r.ok).length, '/ scrape fail:', scrapeResults.filter(r => !r.ok).length);
-
- 
-  // ADD THIS
-  extractionResults.forEach((result, i) => {
-    if (result.status === 'rejected') {
-      console.log('[scout] extraction failed:', result.reason);
-    }
-  });
-
-  const liveCandidates: ScoutCandidate[] = extractionResults.flatMap((result, index) => {
-    if (result.status !== 'fulfilled') return [];
-    return [{ ...result.value, candidateId: `live:${index}:${result.value.sourceUrl}`, source: 'live' as const }];
-  })
-  console.log('[scout] extracted total:', liveCandidates.length, 'confidence breakdown:', 
-    liveCandidates.reduce((acc, c) => (acc[c.confidence] = (acc[c.confidence]||0)+1, acc), {} as Record<string, number>));
-  const viableLiveResults = liveCandidates.filter((candidate) => candidate.confidence !== 'low');
-  console.log('[scout] viable live (non-low):', viableLiveResults.length);
+  if (!viableCandidates.length) return [];
 
   emit(onProgress, { stage: 'checking_eligibility', message: 'Checking each opportunity against your profile…' });
-  const usedFallback = viableLiveResults.length < MIN_VIABLE_RESULTS;
-  const fallback = usedFallback ? await getPreFetchedFallback(profile) : [];
-  console.log('[scout] fallback pulled:', fallback.length, 'usedFallback:', usedFallback);
-
-  const candidatesByUrl = new Map<string, ScoutCandidate>();
-  for (const candidate of [...viableLiveResults, ...fallback]) {
-    if (!candidatesByUrl.has(candidate.sourceUrl)) candidatesByUrl.set(candidate.sourceUrl, candidate);
-  }
-  const candidates = [...candidatesByUrl.values()];
-  console.log('[scout] final candidate pool sent to ranking:', candidates.length);
-
-
-  if (candidates.length === 0) {
-    emit(onProgress, { stage: 'done', message: 'We could not find strong opportunities for this profile yet.', count: 0 });
-    return { matches: [], usedFallback };
-  }
-
   emit(onProgress, { stage: 'ranking', message: 'Ranking your strongest matches…' });
-  const rankingPool = candidates.map((c, i) => ({ ...c, candidateId: `c${i}` }));
-  const idToCandidate = new Map(rankingPool.map((c, i) => [c.candidateId, candidates[i]]));
+  const rankingPool = viableCandidates.map((candidate, index) => ({ ...candidate, candidateId: `c${index}` }));
+  const candidateById = new Map(rankingPool.map((candidate) => [candidate.candidateId, candidate]));
   const ranking = await rankCandidates(profile, rankingPool);
-  console.log('[scout] ranking.matches returned by AI:', ranking.matches.length);
-  const ranked = ranking.matches.flatMap((match) => {
-    const opportunity = idToCandidate.get(match.candidateId);
+  return ranking.matches.flatMap((match) => {
+    const opportunity = candidateById.get(match.candidateId);
     return opportunity ? [{ ...match, score: Math.round(match.score), opportunity }] : [];
   }).slice(0, 5);
-  console.log('[scout] matched back to real candidates:', ranked.length);
+}
 
-
-  const persistenceResults = await Promise.allSettled(ranked.map(async (match) => ({
-    ...match,
-    opportunity: match.opportunity.source === 'live'
-      ? await persistLiveCandidate(match.opportunity, userId)
-      : match.opportunity,
-  })));
-  const persistedCandidates = persistenceResults.flatMap((result) => result.status === 'fulfilled' ? [result.value] : []);
-  // Storage is useful for later browsing, but a transient database failure should
-  // never hide the results we already found and ranked for the user.
-  await persistMatches(profile.id, persistedCandidates).catch((error: unknown) => {
-    console.error('Unable to persist scout matches:', error);
+async function rankFallbackCandidates(profile: ScoutProfile, fallback: ScoutCandidate[]) {
+  const rankingPool = fallback.map((candidate, index) => ({ ...candidate, candidateId: `fallback:${index}` }));
+  const candidateById = new Map(rankingPool.map((candidate) => [candidate.candidateId, candidate]));
+  const ranking = await rankCandidates(profile, rankingPool);
+  return ranking.matches.flatMap((match) => {
+    const opportunity = candidateById.get(match.candidateId);
+    return opportunity ? [{ ...match, score: Math.round(match.score), opportunity }] : [];
   });
+}
 
-  emit(onProgress, { stage: 'done', message: `Your ${ranked.length} strongest matches are ready.`, count: ranked.length });
-  return { matches: ranked, usedFallback };
+export async function runGuestScoutPipeline(options: PipelineOptions): Promise<ScoutPipelineResult> {
+  const matches = await rankLiveCandidates(options.profile, options.onProgress);
+  emit(options.onProgress, { stage: 'done', message: matches.length ? `Your ${matches.length} strongest matches are ready.` : 'Try refining your interests and run another scout.', count: matches.length });
+  return { matches, usedFallback: false };
+}
+
+export async function runScoutPipeline({ userId, onProgress, onResult }: RunScoutPipelineOptions): Promise<ScoutPipelineResult> {
+  const profile = await getScoutProfile(userId);
+  let matches = await rankLiveCandidates(profile, onProgress);
+  const usedFallback = matches.length < MIN_VIABLE_RESULTS;
+
+  if (usedFallback) {
+    emit(onProgress, { stage: 'checking_eligibility', message: 'Adding relevant opportunities from the saved pool…' });
+    const fallback = await getPreFetchedFallback(profile);
+    if (fallback.length) {
+      emit(onProgress, { stage: 'ranking', message: 'Ranking your strongest matches…' });
+      const fallbackMatches = await rankFallbackCandidates(profile, fallback);
+      const unique = new Map(matches.map((match) => [match.opportunity.sourceUrl, match]));
+      fallbackMatches.forEach((match) => unique.set(match.opportunity.sourceUrl, match));
+      matches = [...unique.values()].sort((a, b) => b.score - a.score).slice(0, 5);
+    }
+  }
+
+  const result = { matches, usedFallback };
+  // The route forwards this result to the browser before persistence begins,
+  // while the request remains open long enough for the normal database write.
+  onResult?.(result);
+  const saved = await Promise.allSettled(matches.map(async (match) => ({
+    ...match,
+    opportunity: match.opportunity.source === 'live' ? await persistLiveCandidate(match.opportunity, userId) : match.opportunity,
+  })));
+  const persisted = saved.flatMap((entry) => entry.status === 'fulfilled' ? [entry.value] : []);
+  await persistMatches(profile.id, persisted).catch((error: unknown) => console.error('Unable to persist scout matches:', error));
+
+  emit(onProgress, { stage: 'done', message: matches.length ? `Your ${matches.length} strongest matches are ready.` : 'Try refining your profile and run another scout.', count: matches.length });
+  return result;
 }
