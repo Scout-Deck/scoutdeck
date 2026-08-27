@@ -156,7 +156,7 @@ Extraction agent (gpt-oss-20b) on every URL that succeeded
 **Fallback trigger condition** (implement as an explicit constant, not a vague
 judgment call):
 ```typescript
-const MIN_VIABLE_RESULTS = 5; // tune during testing
+const MIN_VIABLE_RESULTS = 3; // tune during testing
 
 const liveResults = extractedFromLive.filter(o => o.confidence !== 'low');
 

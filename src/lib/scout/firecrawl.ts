@@ -23,7 +23,7 @@ type FirecrawlResponse = {
 
 
 const SCRAPE_TIMEOUT_MS = 7_000;
-const SCRAPE_CONCURRENCY = 2;
+const SCRAPE_CONCURRENCY = 4;
 
 export async function scrapeUrl(url: string): Promise<ScrapeResult> {
   const apiKey = process.env.FIRECRAWL_API_KEY;
@@ -66,8 +66,37 @@ export async function scrapeUrl(url: string): Promise<ScrapeResult> {
 }
 
 export async function scrapeAll(urls: string[]): Promise<ScrapeResult[]> {
-  const results = await runWithConcurrency(urls, SCRAPE_CONCURRENCY, scrapeUrl);
-  return results.map((result, index) => result.status === 'fulfilled'
-    ? result.value
-    : { ok: false, url: urls[index], error: 'Scrape failed.' });
+  const results = await runWithConcurrency(
+    urls,
+    SCRAPE_CONCURRENCY,
+    scrapeUrl,
+  );
+
+  return results.map((result, index) => {
+    if (result.status === "rejected") {
+      console.log(
+        "[firecrawl] rejected:",
+        urls[index],
+        result.reason,
+      );
+
+      return {
+        ok: false as const,
+        url: urls[index],
+        error: "Scrape failed.",
+      };
+    }
+
+    const scrapeResult = result.value;
+
+    if (scrapeResult.ok === false) {
+      console.log(
+        "[firecrawl] failed:",
+        scrapeResult.url,
+        scrapeResult.error,
+      );
+    }
+
+    return scrapeResult;
+  });
 }

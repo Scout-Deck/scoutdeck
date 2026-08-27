@@ -93,7 +93,7 @@ GEMINI_MODEL=gemini-3.5-flash
 The explicit threshold is:
 
 ```ts
-MIN_VIABLE_RESULTS = 5
+MIN_VIABLE_RESULTS = 3
 ```
 
 When fewer than five live candidates have medium or high confidence, ScoutDeck reads matching pre-fetched rows from Supabase (`opportunities.is_prefetched = true`). The fallback is filtered to the user’s selected opportunity types, merged with live candidates, and de-duplicated by source URL.
