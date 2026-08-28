@@ -207,7 +207,7 @@ components:
         notes: { type: string }
     Profile:
       type: object
-      required: [name, educationLevel, fieldOfStudy, skills, interests, location, remoteOk, opportunityTypes, experienceLevel]
+      required: [name, educationLevel, fieldOfStudy, skills, experience, interests, location, remoteOk, opportunityTypes, experienceLevel]
       properties:
         name: { type: string }
         educationLevel: { type: string }
@@ -215,6 +215,7 @@ components:
         skills:
           type: array
           items: { type: string }
+        experience: { type: string }
         interests: { type: string }
         location: { type: string }
         remoteOk: { type: boolean }
@@ -235,6 +236,7 @@ components:
         skills:
           type: array
           items: { type: string }
+        experience: { type: string }
         interests: { type: string }
         location: { type: string }
         remoteOk: { type: boolean }

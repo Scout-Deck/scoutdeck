@@ -6,6 +6,7 @@ export type ApiProfile = {
   educationLevel: string;
   fieldOfStudy: string;
   skills: string[];
+  experience: string;
   interests: string;
   location: string;
   remoteOk: boolean;
@@ -43,7 +44,7 @@ function toProfile(row: Record<string, unknown>): ApiProfile {
   return {
     name: String(row.name ?? ''), educationLevel: String(row.education_level ?? ''),
     fieldOfStudy: String(row.field_of_study ?? ''), skills: Array.isArray(row.skills) ? row.skills.filter((skill): skill is string => typeof skill === 'string') : [],
-    interests: String(row.interests ?? ''), location: String(row.location ?? ''), remoteOk: Boolean(row.remote_ok),
+    experience: String(row.experience ?? ''), interests: String(row.interests ?? ''), location: String(row.location ?? ''), remoteOk: Boolean(row.remote_ok),
     opportunityTypes: Array.isArray(row.opportunity_types) ? row.opportunity_types.filter((type): type is OpportunityType => typeof type === 'string' && validTypes.has(type)) : [],
     experienceLevel: row.experience_level === 'recent_grad' || row.experience_level === 'early_career' ? row.experience_level : 'student',
   };
@@ -81,7 +82,7 @@ export async function updateProfile(input: Partial<ApiProfile>): Promise<ApiProf
   const update = {
     id: userId, ...(input.name !== undefined && { name: input.name }), ...(input.educationLevel !== undefined && { education_level: input.educationLevel }),
     ...(input.fieldOfStudy !== undefined && { field_of_study: input.fieldOfStudy }), ...(input.skills !== undefined && { skills: input.skills }),
-    ...(input.interests !== undefined && { interests: input.interests }), ...(input.location !== undefined && { location: input.location }),
+    ...(input.experience !== undefined && { experience: input.experience }), ...(input.interests !== undefined && { interests: input.interests }), ...(input.location !== undefined && { location: input.location }),
     ...(input.remoteOk !== undefined && { remote_ok: input.remoteOk }), ...(input.opportunityTypes !== undefined && { opportunity_types: input.opportunityTypes }),
     ...(input.experienceLevel !== undefined && { experience_level: input.experienceLevel }),
   };

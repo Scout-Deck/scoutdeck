@@ -11,6 +11,12 @@ function redirectWithSessionCookies(url: URL, response: NextResponse) {
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  // Guest scouting is deliberately independent of Supabase. Bypass session
+  // refresh as well as authentication so it remains usable without any
+  // Supabase client configuration and never touches guest data.
+  if (pathname === '/guest' || pathname.startsWith('/api/guest/')) {
+    return NextResponse.next({ request });
+  }
   const { response, user } = await updateSession(request);
 
   if (!user && !publicPaths.has(pathname) && !pathname.startsWith('/api/')) {

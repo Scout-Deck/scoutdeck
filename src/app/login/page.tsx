@@ -70,8 +70,8 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="grain grid min-h-dvh place-items-center bg-background p-6">
-      <section className="w-full max-w-md rounded-[28px] border border-card-border bg-card p-7 shadow-[0_10px_0_hsl(var(--foreground)/.06)] sm:p-9">
+    <main className="grain grid min-h-dvh place-items-center bg-background p-4 sm:p-6">
+      <section className="w-full max-w-md rounded-[24px] border border-card-border bg-card p-5 shadow-[0_10px_0_hsl(var(--foreground)/.06)] sm:rounded-[28px] sm:p-9">
         {/* <div className="grid size-11 place-items-center rounded-xl bg-primary text-primary-foreground"><Compass size={22} /></div> */}
         <Image src="/icon.jpg" alt="ScoutDeck" width={40} height={40} className="size-10" priority />
         <p className="mt-6 font-mono-label text-[10px] uppercase tracking-[.18em] text-primary">ScoutDeck</p>
@@ -86,7 +86,7 @@ export default function LoginPage() {
           <button className="focus-ring flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-primary-foreground disabled:opacity-60" type="submit" disabled={pending}>{mode === 'sign-in' ? <LogIn size={16} /> : <UserPlus size={16} />}{pending ? 'Working…' : mode === 'sign-in' ? 'Sign in' : 'Create account'}</button>
         </form>
 
-        <div className="mt-5 flex items-center justify-between gap-4"><button type="button" className="focus-ring text-xs font-semibold text-primary underline underline-offset-4" onClick={() => { setMode(mode === 'sign-in' ? 'sign-up' : 'sign-in'); setError(''); setMessage(''); }}>{mode === 'sign-in' ? 'Need an account? Sign up' : 'Already have an account? Sign in'}</button><Link href="/guest" className="focus-ring text-xs font-semibold text-muted-foreground underline underline-offset-4">Try as guest</Link></div>
+        <div className="mt-5 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4"><button type="button" className="focus-ring inline-flex min-h-11 items-center text-left text-xs font-semibold text-primary underline underline-offset-4" onClick={() => { setMode(mode === 'sign-in' ? 'sign-up' : 'sign-in'); setError(''); setMessage(''); }}>{mode === 'sign-in' ? 'Need an account? Sign up' : 'Already have an account? Sign in'}</button><Link href="/guest" className="focus-ring inline-flex min-h-11 items-center text-xs font-semibold text-muted-foreground underline underline-offset-4">Try as guest</Link></div>
       </section>
     </main>
   );

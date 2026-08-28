@@ -6,6 +6,8 @@ import {
   type ErrorInfo,
   type ReactNode,
 } from 'react';
+import Link from 'next/link';
+import { Compass, RefreshCw } from 'lucide-react';
 
 export interface ErrorFallbackProps {
   error: Error;
@@ -39,13 +41,13 @@ function toError(value: unknown): Error {
 
 function DefaultFallback({ error, resetError }: ErrorFallbackProps) {
   return (
-    <div className="grain flex min-h-[100dvh] w-full items-center justify-center bg-background p-6">
-      <div className="w-full max-w-lg text-center">
-        <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-accent text-accent-foreground">!</div>
-        <p className="mt-6 font-mono-label text-[10px] uppercase tracking-[.2em] text-destructive">Signal interruption</p>
-        <h1 className="mt-2 text-2xl font-semibold tracking-[-.04em]">Something went sideways.</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          This part of the app hit an error. Your other trails are still safe.
+    <div className="grain flex min-h-[100dvh] w-full items-center justify-center bg-background p-4 sm:p-6">
+      <div className="w-full max-w-lg rounded-[28px] border border-card-border bg-card p-6 text-center shadow-[0_10px_0_hsl(var(--foreground)/.06)] sm:p-9">
+        <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-accent/60 text-accent-foreground"><Compass size={26} aria-hidden="true" /></div>
+        <p className="mt-6 font-mono-label text-[10px] uppercase tracking-[.2em] text-primary">Signal interruption</p>
+        <h1 className="mt-2 text-balance text-2xl font-semibold tracking-[-.04em]">This trail hit a snag.</h1>
+        <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-muted-foreground">
+          Your saved routes are safe. Try this step again, or head back to your shortlist.
         </p>
         {/* Dev only: messages can carry API responses and other internals. */}
         {process.env.NODE_ENV === 'development' ? (
@@ -53,13 +55,10 @@ function DefaultFallback({ error, resetError }: ErrorFallbackProps) {
             {error.message || String(error)}
           </pre>
         ) : null}
-        <button
-          type="button"
-          onClick={resetError}
-          className="focus-ring mt-5 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground"
-        >
-          Try again
-        </button>
+        <div className="mt-6 flex flex-col-reverse justify-center gap-3 sm:flex-row">
+          <Link href="/dashboard" className="focus-ring inline-flex min-h-11 items-center justify-center rounded-full border border-border px-5 text-sm font-semibold hover:bg-muted">Back to shortlist</Link>
+          <button type="button" onClick={resetError} className="focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground"><RefreshCw size={16} aria-hidden="true" /> Try again</button>
+        </div>
       </div>
     </div>
   );

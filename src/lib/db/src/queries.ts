@@ -32,6 +32,7 @@ export type ApiProfile = {
   educationLevel: string;
   fieldOfStudy: string;
   skills: string[];
+  experience: string;
   interests: string;
   location: string;
   remoteOk: boolean;
@@ -77,6 +78,7 @@ function toApiProfile(row: ProfileRow): ApiProfile {
     educationLevel: row.educationLevel,
     fieldOfStudy: row.fieldOfStudy,
     skills: row.skills,
+    experience: row.experience ?? "",
     interests: row.interests,
     location: row.location,
     remoteOk: row.remoteOk,
@@ -174,6 +176,7 @@ function defaultProfileRow(): ProfileRow {
     educationLevel: "",
     fieldOfStudy: "",
     skills: [],
+    experience: null,
     interests: "",
     location: "",
     remoteOk: true,
@@ -206,6 +209,7 @@ export async function updateProfile(input: ProfileInput): Promise<ApiProfile> {
       educationLevel: merged.educationLevel,
       fieldOfStudy: merged.fieldOfStudy,
       skills: merged.skills,
+      experience: merged.experience || null,
       interests: merged.interests,
       location: merged.location,
       remoteOk: merged.remoteOk,
@@ -219,6 +223,7 @@ export async function updateProfile(input: ProfileInput): Promise<ApiProfile> {
         educationLevel: merged.educationLevel,
         fieldOfStudy: merged.fieldOfStudy,
         skills: merged.skills,
+        experience: merged.experience || null,
         interests: merged.interests,
         location: merged.location,
         remoteOk: merged.remoteOk,

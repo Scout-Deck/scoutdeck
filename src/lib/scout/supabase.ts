@@ -17,7 +17,7 @@ export async function getScoutProfile(userId: string): Promise<ScoutProfile> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, name, education_level, field_of_study, skills, interests, location, remote_ok, opportunity_types, experience_level')
+    .select('id, name, education_level, field_of_study, skills, experience, interests, location, remote_ok, opportunity_types, experience_level')
     .eq('id', userId)
     .maybeSingle();
 
@@ -34,6 +34,7 @@ export async function getScoutProfile(userId: string): Promise<ScoutProfile> {
     educationLevel: data.education_level,
     fieldOfStudy: data.field_of_study,
     skills: data.skills ?? [],
+    experience: data.experience ?? '',
     interests: data.interests,
     location: data.location,
     remoteOk: data.remote_ok,

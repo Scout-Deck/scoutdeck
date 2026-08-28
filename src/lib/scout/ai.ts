@@ -152,7 +152,7 @@ export async function extractOpportunity(input: { url: string; markdown: string 
   return { ...extracted, sourceUrl: input.url };
 }
 
-const rankingSystem = `You are ScoutDeck's opportunity-ranking engine. Return only JSON. Rank candidates comparatively. Return no more than five genuine fits. Each matchReason must cite two or three concrete profile facts and specific opportunity details; generic wording is forbidden.`;
+const rankingSystem = `You are ScoutDeck's opportunity-ranking engine. Return only JSON. Rank candidates comparatively. Return no more than five genuine fits. Each matchReason must cite two or three concrete profile facts and specific opportunity details; generic wording is forbidden. Only use facts present in the candidate fields. If a candidate is sparse, do not infer a deadline, organisation, eligibility, compensation, location, or required skills.`;
 
 export async function rankCandidates(profile: ScoutProfile, candidates: ScoutCandidate[]) {
   const prompt = `Profile:\n${JSON.stringify(profile)}\n\nCandidates:\n${JSON.stringify(candidates.map((candidate) => ({

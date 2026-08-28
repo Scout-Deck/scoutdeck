@@ -43,14 +43,14 @@ export function OpportunityCard({ opportunity, index = 0 }: { opportunity: Oppor
     });
   };
   return (
-    <div className={cn('scout-rise group relative border-y border-card-border bg-card transition-transform duration-300 hover:translate-x-2', `scout-rise-${Math.min(index + 1, 4)}`)} data-testid={`card-opportunity-${opportunity.id}`}>
-      <Link href={`/opportunities/${opportunity.id}`} className="focus-ring block p-5 md:p-6" data-testid={`link-opportunity-${opportunity.id}`}>
+    <div className={cn('scout-rise group relative border-y border-card-border bg-card transition-transform duration-300 md:hover:translate-x-2', `scout-rise-${Math.min(index + 1, 4)}`)} data-testid={`card-opportunity-${opportunity.id}`}>
+      <Link href={`/opportunities/${opportunity.id}`} className="focus-ring block p-4 pb-[4.75rem] sm:p-5 sm:pb-[4.75rem] md:p-6 md:pb-20" data-testid={`link-opportunity-${opportunity.id}`}>
       <div className="flex items-start justify-between gap-4">
         <div className="flex min-w-0 items-start gap-3">
           <span className="mt-0.5 grid size-10 shrink-0 place-items-center rounded-full bg-primary font-mono-label text-[11px] font-medium text-primary-foreground">{opportunity.organization.slice(0, 2).toUpperCase()}</span>
           <div className="min-w-0">
             <p className="truncate text-xs font-medium text-muted-foreground">{opportunity.organization}</p>
-            <h3 className="mt-1 text-[17px] font-semibold leading-tight tracking-[-0.025em] text-foreground md:text-lg">{opportunity.title}</h3>
+            <h3 className="mt-1 wrap-anywhere text-[17px] font-semibold leading-tight tracking-[-0.025em] text-foreground md:text-lg">{opportunity.title}</h3>
           </div>
         </div>
         <span className="size-9 shrink-0" aria-hidden="true" />
@@ -69,10 +69,11 @@ export function OpportunityCard({ opportunity, index = 0 }: { opportunity: Oppor
           <span className="font-mono-label text-[11px] font-medium text-primary">{Math.round(opportunity.score)} match</span>
           <div className="h-1.5 w-16 overflow-hidden rounded-full bg-secondary"><div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(100, opportunity.score)}%` }} /></div>
         </div>
-        <span className="flex items-center gap-1 text-xs font-semibold text-primary opacity-0 transition-opacity group-hover:opacity-100">See why <ArrowUpRight size={14} /></span>
+        <span className="flex items-center gap-1 text-xs font-semibold text-primary md:opacity-0 md:transition-opacity md:group-hover:opacity-100">See why <ArrowUpRight size={14} /></span>
       </div>
       </Link>
-      <button type="button" aria-label={saved ? 'Remove from saved' : 'Save opportunity'} onClick={toggleSave} disabled={busy} className={cn('focus-ring absolute right-5 top-5 grid size-9 place-items-center rounded-full border transition-colors md:right-6 md:top-6', saved ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-card text-muted-foreground hover:border-primary hover:text-primary')} data-testid={`button-save-opportunity-${opportunity.id}`}>
+      <a href={opportunity.sourceUrl} target="_blank" rel="noopener noreferrer" onClick={(event) => event.stopPropagation()} className="focus-ring absolute bottom-3 left-4 z-10 inline-flex min-h-11 items-center gap-1 rounded px-1 text-xs font-semibold text-primary underline underline-offset-4 sm:left-5 md:bottom-5 md:left-6" data-testid={`link-source-opportunity-${opportunity.id}`}>View opportunity <ArrowUpRight size={14} aria-hidden="true" /></a>
+      <button type="button" aria-label={saved ? 'Remove from saved' : 'Save opportunity'} onClick={toggleSave} disabled={busy} className={cn('focus-ring absolute right-4 top-4 grid size-11 place-items-center rounded-full border transition-colors sm:right-5 sm:top-5 md:right-6 md:top-6', saved ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-card text-muted-foreground hover:border-primary hover:text-primary')} data-testid={`button-save-opportunity-${opportunity.id}`}>
         {justSaved ? <Check size={16} className="scout-rise" /> : <Bookmark size={16} fill={saved ? 'currentColor' : 'none'} />}
       </button>
     </div>
