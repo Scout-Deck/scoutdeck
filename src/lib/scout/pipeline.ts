@@ -11,7 +11,6 @@ import {
 import { searchAllQueries, MAX_SEARCH_TARGETS } from "./tavily";
 import type {
   RankedScoutMatch,
-  
   ScoutCandidate,
   ScoutProfile,
   ScoutProgress,
@@ -237,7 +236,7 @@ async function persistScoutResults(
   profileId: string,
   userId: string,
   matches: RankedScoutMatch[],
-) {
+): Promise<RankedScoutMatch[]> {
   console.log("[scout] persistence:start");
 
   const saved = await Promise.allSettled(
@@ -250,8 +249,17 @@ async function persistScoutResults(
     })),
   );
 
-  const persisted = saved.flatMap((entry) =>
-    entry.status === "fulfilled" ? [entry.value] : [],
+  const persisted = saved.flatMap((entry) => {
+    if (entry.status === "fulfilled") {
+      return [entry.value];
+    }
+
+    console.error("[scout] persistence failed:", entry.reason);
+    return [];
+  });
+
+  console.log(
+    `[scout] persistence: ${persisted.length}/${matches.length} opportunities persisted`,
   );
 
   if (persisted.length) {
@@ -259,6 +267,8 @@ async function persistScoutResults(
   }
 
   console.log("[scout] persistence:done");
+
+  return persisted;
 }
 
 export async function runScoutPipeline({
@@ -274,10 +284,7 @@ export async function runScoutPipeline({
 
   let matches = await rankLiveCandidates(profile, onProgress);
 
-  console.log(
-    "[scout] rank-live-candidates:done",
-    `${Date.now() - started}ms`,
-  );
+  console.log("[scout] rank-live-candidates:done", `${Date.now() - started}ms`);
 
   const usedFallback = matches.length < MIN_VIABLE_RESULTS;
 
@@ -318,18 +325,18 @@ export async function runScoutPipeline({
     }
   }
 
-  const result: ScoutPipelineResult = {
+  const persistedMatches = await persistScoutResults(
+    profile.id,
+    userId,
     matches,
+  );
+
+  const result: ScoutPipelineResult = {
+    matches: persistedMatches,
     usedFallback,
   };
 
-  // Send results to the route immediately.
   onResult?.(result);
-
-  // Persistence does NOT block the scout response.
-  void persistScoutResults(profile.id, userId, matches).catch((error) => {
-    console.error("[scout] background persistence failed:", error);
-  });
 
   emit(onProgress, {
     stage: "done",
@@ -339,10 +346,7 @@ export async function runScoutPipeline({
     count: matches.length,
   });
 
-  console.log(
-    "[scout] pipeline:done",
-    `${Date.now() - started}ms`,
-  );
+  console.log("[scout] pipeline:done", `${Date.now() - started}ms`);
 
   return result;
 }
@@ -354,10 +358,7 @@ export async function runGuestScoutPipeline(
 
   console.log("[scout] guest-pipeline:start");
 
-  const matches = await rankLiveCandidates(
-    options.profile,
-    options.onProgress,
-  );
+  const matches = await rankLiveCandidates(options.profile, options.onProgress);
 
   emit(options.onProgress, {
     stage: "done",
@@ -367,10 +368,7 @@ export async function runGuestScoutPipeline(
     count: matches.length,
   });
 
-  console.log(
-    "[scout] guest-pipeline:done",
-    `${Date.now() - started}ms`,
-  );
+  console.log("[scout] guest-pipeline:done", `${Date.now() - started}ms`);
 
   return {
     matches,
