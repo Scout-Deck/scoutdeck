@@ -3,7 +3,7 @@
 -- ============================================================
 
 create type opportunity_type as enum (
-  'internship', 'fellowship', 'hackathon', 'scholarship', 'grant', 'job'
+  'fellowship', 'builder_program', 'ambassador_program', 'hackathon', 'scholarship', 'grant'
 );
 
 create type opportunity_source_type as enum (
@@ -82,6 +82,7 @@ create index opportunities_type_idx on opportunities(type);
 create index opportunities_source_type_idx on opportunities(source_type);
 create index opportunities_prefetched_idx on opportunities(is_prefetched);
 create index opportunities_deadline_idx on opportunities(deadline);
+create unique index opportunities_source_url_unique_idx on opportunities(source_url);
 
 alter table opportunities enable row level security;
 

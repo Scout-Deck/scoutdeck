@@ -10,13 +10,22 @@ type ScoutState = {
   matches: RankedScoutMatch[];
 };
 
-export function useScout(onComplete: () => void) {
+type UseScoutOptions = {
+  endpoint?: string;
+  onComplete?: (matches: RankedScoutMatch[]) => void | Promise<void>;
+};
+
+export function useScout({ endpoint = '/api/opportunities/scout', onComplete }: UseScoutOptions = {}) {
   const [state, setState] = useState<ScoutState>({ pending: false, progress: null, error: null, matches: [] });
 
-  const scout = useCallback(async () => {
+  const scout = useCallback(async (body?: unknown) => {
     setState({ pending: true, progress: { stage: 'searching', message: 'Starting your scout…' }, error: null, matches: [] });
     try {
-      const response = await fetch('/api/opportunities/scout', { method: 'POST' });
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: body ? { 'Content-Type': 'application/json' } : undefined,
+        body: body ? JSON.stringify(body) : undefined,
+      });
       if (!response.ok || !response.body) throw new Error('ScoutDeck could not start this search.');
 
       const reader = response.body.getReader();
@@ -34,16 +43,19 @@ export function useScout(onComplete: () => void) {
           if (!name || !rawData) continue;
           const data: unknown = JSON.parse(rawData);
           if (name === 'progress') setState((current) => ({ ...current, progress: data as ScoutProgress }));
-          if (name === 'result') setState((current) => ({ ...current, matches: (data as { matches?: RankedScoutMatch[] }).matches ?? [] }));
+          if (name === 'result') {
+            const matches = (data as { matches?: RankedScoutMatch[] }).matches ?? [];
+            setState((current) => ({ ...current, matches, pending: false }));
+            await onComplete?.(matches);
+          }
           if (name === 'error') throw new Error((data as { message?: string }).message ?? 'ScoutDeck could not finish this search.');
         }
       }
-      await onComplete();
       setState((current) => ({ ...current, pending: false, progress: { stage: 'done', message: 'Your shortlist is ready.' }, error: null }));
     } catch (error) {
       setState((current) => ({ ...current, pending: false, error: error instanceof Error ? error.message : 'ScoutDeck could not finish this search.' }));
     }
-  }, [onComplete]);
+  }, [endpoint, onComplete]);
 
   return { ...state, scout };
 }

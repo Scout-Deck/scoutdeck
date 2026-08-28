@@ -1,8 +1,10 @@
 'use client';
 
 import { FormEvent, useState } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { Compass, LogIn, UserPlus } from 'lucide-react';
+import { LogIn, UserPlus } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 type Mode = 'sign-in' | 'sign-up';
@@ -28,7 +30,7 @@ export default function LoginPage() {
       const supabase = createClient();
       const result = mode === 'sign-in'
         ? await supabase.auth.signInWithPassword({ email, password })
-        : await supabase.auth.signUp({ email, password, options: { emailRedirectTo: `${window.location.origin}/auth/confirm` } });
+        : await supabase.auth.signUp({ email, password });
 
       if (result.error) {
         setError(result.error.message);
@@ -39,7 +41,12 @@ export default function LoginPage() {
       // enabled. The profile row is protected by RLS, so create it only after
       // the user has a real authenticated session (typically their first sign-in).
       if (!result.data.session) {
-        setMessage('Account created. Check your email to confirm it, then sign in.');
+        if (mode === 'sign-up' && result.data.user?.identities?.length === 0) {
+          setMode('sign-in');
+          setMessage('An account already exists or is awaiting confirmation. Check your email, then sign in.');
+        } else {
+          setMessage('Account created. Check your email to confirm it, then sign in.');
+        }
         return;
       }
 
@@ -66,7 +73,7 @@ export default function LoginPage() {
     <main className="grain grid min-h-dvh place-items-center bg-background p-6">
       <section className="w-full max-w-md rounded-[28px] border border-card-border bg-card p-7 shadow-[0_10px_0_hsl(var(--foreground)/.06)] sm:p-9">
         {/* <div className="grid size-11 place-items-center rounded-xl bg-primary text-primary-foreground"><Compass size={22} /></div> */}
-        <img src="/icon.jpg" alt="icon" className='size-10' />
+        <Image src="/icon.jpg" alt="ScoutDeck" width={40} height={40} className="size-10" priority />
         <p className="mt-6 font-mono-label text-[10px] uppercase tracking-[.18em] text-primary">ScoutDeck</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-[-.06em]">{mode === 'sign-in' ? 'Welcome back.' : 'Start your search.'}</h1>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Save your profile, then we&rsquo;ll scout opportunities that deserve your attention.</p>
@@ -79,7 +86,7 @@ export default function LoginPage() {
           <button className="focus-ring flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-primary-foreground disabled:opacity-60" type="submit" disabled={pending}>{mode === 'sign-in' ? <LogIn size={16} /> : <UserPlus size={16} />}{pending ? 'Working…' : mode === 'sign-in' ? 'Sign in' : 'Create account'}</button>
         </form>
 
-        <button type="button" className="focus-ring mt-5 text-xs font-semibold text-primary underline underline-offset-4" onClick={() => { setMode(mode === 'sign-in' ? 'sign-up' : 'sign-in'); setError(''); setMessage(''); }}>{mode === 'sign-in' ? 'Need an account? Sign up' : 'Already have an account? Sign in'}</button>
+        <div className="mt-5 flex items-center justify-between gap-4"><button type="button" className="focus-ring text-xs font-semibold text-primary underline underline-offset-4" onClick={() => { setMode(mode === 'sign-in' ? 'sign-up' : 'sign-in'); setError(''); setMessage(''); }}>{mode === 'sign-in' ? 'Need an account? Sign up' : 'Already have an account? Sign in'}</button><Link href="/guest" className="focus-ring text-xs font-semibold text-muted-foreground underline underline-offset-4">Try as guest</Link></div>
       </section>
     </main>
   );

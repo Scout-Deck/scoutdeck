@@ -24,10 +24,10 @@ on Product Hunt or Peerlist. Judging weights: Innovation 25%, Problem-solution
 fit 20%, Usability/design 20%, Execution/craft 15%, Impact/storytelling 10%,
 Feasibility/scale 10%.
 
-**The differentiator vs. every competitor we researched** (Jobright, Scholly,
-Devpost, etc.): every existing product owns one vertical (jobs *or*
-scholarships *or* hackathons) and matches within it. Nobody unifies opportunity
-types under one profile and ranks across all of them. Hackathons/fellowships
+**The differentiator vs. every competitor we researched** (career platforms,
+Scholly, Devpost, etc.): most existing products own one vertical (scholarships
+*or* hackathons) and match within it. Nobody unifies opportunity types under
+one profile and ranks across all of them. Hackathons/fellowships
 specifically have *no* existing matching layer at all — pure directories — which
 is why that's our demo-focus vertical.
 
@@ -156,7 +156,7 @@ Extraction agent (gpt-oss-20b) on every URL that succeeded
 **Fallback trigger condition** (implement as an explicit constant, not a vague
 judgment call):
 ```typescript
-const MIN_VIABLE_RESULTS = 5; // tune during testing
+const MIN_VIABLE_RESULTS = 3; // tune during testing
 
 const liveResults = extractedFromLive.filter(o => o.confidence !== 'low');
 
@@ -187,14 +187,14 @@ profiles (
   experience_level text,
   interests text[],
   location text,
-  preferred_types text[],   -- ['hackathon', 'fellowship', 'internship', ...]
+  preferred_types text[],   -- ['hackathon', 'fellowship', 'builder_program', ...]
   created_at timestamp
 )
 
 opportunities (
   id uuid primary key,
   title text,
-  type text,                -- 'hackathon' | 'fellowship' | 'internship' | etc
+  type text,                -- 'hackathon' | 'fellowship' | 'builder_program' | etc
   source_url text,
   raw_description text,
   eligibility text,

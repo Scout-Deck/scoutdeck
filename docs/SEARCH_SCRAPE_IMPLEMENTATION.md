@@ -35,7 +35,7 @@ The orchestrator is `src/lib/scout/pipeline.ts`.
 
 `getScoutProfile()` loads the authenticated user’s `profiles` row. `buildSearchQueries()` turns their preferred opportunity types, skills, interests, location, and remote preference into one or more search queries.
 
-If a profile has no selected opportunity types, the query builder uses its supported defaults: hackathons, fellowships, and internships.
+If a profile has no selected opportunity types, the query builder uses its supported defaults: hackathons, fellowships, and builder programs.
 
 ### 2. Tavily search
 
@@ -93,7 +93,7 @@ GEMINI_MODEL=gemini-3.5-flash
 The explicit threshold is:
 
 ```ts
-MIN_VIABLE_RESULTS = 5
+MIN_VIABLE_RESULTS = 3
 ```
 
 When fewer than five live candidates have medium or high confidence, ScoutDeck reads matching pre-fetched rows from Supabase (`opportunities.is_prefetched = true`). The fallback is filtered to the user’s selected opportunity types, merged with live candidates, and de-duplicated by source URL.

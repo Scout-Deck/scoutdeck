@@ -7,12 +7,12 @@ export const experienceLevelEnum = pgEnum("experience_level", [
 ]);
 
 export const profileOpportunityTypeEnum = pgEnum("profile_opportunity_type", [
-  "internship",
   "fellowship",
+  "builder_program",
+  "ambassador_program",
   "hackathon",
   "scholarship",
   "grant",
-  "job",
 ]);
 
 export const profilesTable = pgTable("profiles", {
@@ -27,12 +27,12 @@ export const profilesTable = pgTable("profiles", {
   opportunityTypes: jsonb("opportunity_types")
     .$type<
       (
-        | "internship"
         | "fellowship"
+        | "builder_program"
+        | "ambassador_program"
         | "hackathon"
         | "scholarship"
         | "grant"
-        | "job"
       )[]
     >()
     .notNull(),

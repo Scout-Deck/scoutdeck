@@ -1,6 +1,5 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
-import type { EmailOtpType } from '@supabase/supabase-js';
 
 function authErrorRedirect(request: NextRequest) {
   const url = new URL('/login', request.url);
@@ -23,14 +22,11 @@ export async function GET(request: NextRequest) {
       },
     },
   });
-  const code = request.nextUrl.searchParams.get('code');
   const tokenHash = request.nextUrl.searchParams.get('token_hash');
   const type = request.nextUrl.searchParams.get('type');
-  const result = code
-    ? await supabase.auth.exchangeCodeForSession(code)
-    : tokenHash && type
-      ? await supabase.auth.verifyOtp({ token_hash: tokenHash, type: type as EmailOtpType })
-      : { error: new Error('Missing confirmation code') };
+  const result = tokenHash && type === 'email'
+    ? await supabase.auth.verifyOtp({ token_hash: tokenHash, type: 'email' })
+    : { error: new Error('Missing confirmation token') };
 
   return result.error ? NextResponse.redirect(authErrorRedirect(request)) : response;
 }

@@ -1,5 +1,5 @@
-import { requireUserId, UnauthorizedError } from '@/lib/supabase/server';
-import { runScoutPipeline } from '@/lib/scout/pipeline';
+import { runGuestScoutPipeline } from '@/lib/scout/pipeline';
+import { ScoutProfileSchema } from '@/lib/scout/types';
 
 export const runtime = 'nodejs';
 export const maxDuration = 55;
@@ -10,20 +10,18 @@ function eventMessage(event: string, data: unknown): Uint8Array {
   return encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
 }
 
-export async function POST() {
-  let userId: string;
-  try {
-    userId = await requireUserId();
-  } catch (error) {
-    if (error instanceof UnauthorizedError) {
-      return Response.json({ message: 'Not authenticated' }, { status: 401 });
-    }
-    return Response.json({ message: 'Scout service is unavailable.' }, { status: 500 });
+export async function POST(request: Request) {
+  const contentLength = Number(request.headers.get('content-length') ?? 0);
+  if (contentLength > 16_000) {
+    return Response.json({ message: 'Guest profile is too large.' }, { status: 413 });
+  }
+  const parsed = ScoutProfileSchema.safeParse(await request.json().catch(() => null));
+  if (!parsed.success || !parsed.data.name.trim() || !parsed.data.fieldOfStudy.trim() || !parsed.data.interests.trim() || !parsed.data.skills.length || !parsed.data.opportunityTypes.length) {
+    return Response.json({ message: 'Please complete the guest profile before scouting.' }, { status: 400 });
   }
 
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
-      let resultSent = false;
       let closed = false;
       const send = (event: string, data: unknown) => {
         if (!closed) controller.enqueue(eventMessage(event, data));
@@ -35,27 +33,19 @@ export async function POST() {
         }
       };
       const deadline = setTimeout(() => {
-        send('error', { message: 'This scout run took too long. Please try again.' });
+        send('error', { message: 'This guest scout run took too long. Please try again.' });
         close();
       }, 48_000);
-      void runScoutPipeline({
-        userId,
+      void runGuestScoutPipeline({
+        profile: parsed.data,
         onProgress(progress) {
           send('progress', progress);
         },
-        onResult(result) {
-          resultSent = true;
-          send('result', result);
-        },
       })
-        .then((result) => {
-          if (!resultSent) send('result', result);
-        })
+        .then((result) => send('result', result))
         .catch((error: unknown) => {
-          console.error('Scout pipeline failed:', error);
-          send('error', {
-            message: 'ScoutDeck could not finish this search. Please try again.',
-          });
+          console.error('Guest scout pipeline failed:', error);
+          send('error', { message: 'ScoutDeck could not finish this guest search. Please try again.' });
         })
         .finally(() => {
           clearTimeout(deadline);

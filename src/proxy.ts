@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { updateSession } from '@/lib/supabase/proxy';
 
-const publicPaths = new Set(['/', '/login', '/auth/confirm', '/api/healthz']);
+const publicPaths = new Set(['/', '/login', '/guest', '/auth/confirm', '/api/healthz']);
 
 function redirectWithSessionCookies(url: URL, response: NextResponse) {
   const redirect = NextResponse.redirect(url);

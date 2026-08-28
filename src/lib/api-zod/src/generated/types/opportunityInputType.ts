@@ -6,10 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type OpportunityType = typeof OpportunityType[keyof typeof OpportunityType];
+export type OpportunityInputType = typeof OpportunityInputType[keyof typeof OpportunityInputType];
 
 
-export const OpportunityType = {
+export const OpportunityInputType = {
   fellowship: 'fellowship',
   builder_program: 'builder_program',
   ambassador_program: 'ambassador_program',

@@ -8,6 +8,7 @@ import {
   savedOpportunitiesTable,
   type ProfileRow,
 } from "./schema";
+import type { OpportunityType } from "@/lib/scout/types";
 
 export type ApiOpportunity = {
   id: string;
@@ -131,6 +132,7 @@ export async function getOpportunity(
 
 export async function submitOpportunity(input: {
   url: string;
+  type: OpportunityType;
   notes?: string;
 }): Promise<ApiOpportunity> {
   const db = getDb();
@@ -150,7 +152,7 @@ export async function submitOpportunity(input: {
       organization: hostname,
       summary: input.notes?.trim() || "User submitted opportunity pending review.",
       sourceUrl: input.url,
-      type: "job",
+      type: input.type,
       score: 50,
       why: "Submitted by you for review.",
       deadline: null,

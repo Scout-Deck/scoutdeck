@@ -1,15 +1,17 @@
 import type { OpportunityType, ScoutProfile } from './types';
 
+export const MAX_SCOUT_QUERIES = 3;
+
 const typePhrases: Record<OpportunityType, string> = {
-  internship: 'internship programme application',
   fellowship: 'fellowship programme application',
+  builder_program: 'builder programme application',
+  ambassador_program: 'ambassador programme application',
   hackathon: 'hackathon registration application',
   scholarship: 'scholarship application',
   grant: 'grant application',
-  job: 'entry level job early career role',
 };
 
-export const defaultTypes: OpportunityType[] = ['hackathon', 'fellowship', 'internship'];
+export const defaultTypes: OpportunityType[] = ['hackathon', 'fellowship', 'builder_program'];
 
 function meaningfulTerms(value: string, limit: number): string[] {
   return value
@@ -37,5 +39,5 @@ export function buildSearchQueries(profile: ScoutProfile): string[] {
     ...context,
     profile.remoteOk ? 'remote friendly' : '',
     '2026',
-  ].filter(Boolean).join(' '));
+  ].filter(Boolean).join(' ')).slice(0, MAX_SCOUT_QUERIES);
 }

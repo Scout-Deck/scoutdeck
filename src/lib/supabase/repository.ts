@@ -99,10 +99,31 @@ export async function listOpportunities(params?: { type?: string | null; userSub
   if (params?.userSubmittedOnly) matches = matches.eq('opportunities.source_type', 'user_submitted');
   const { data, error } = await matches;
   if (error) throw new Error('Unable to load your opportunities.');
-  return (data ?? []).flatMap((match) => {
+  const matched = (data ?? []).flatMap((match) => {
     const opportunity = match.opportunities as unknown as OpportunityRow | null;
-    return opportunity ? [toOpportunity(opportunity, selectedSavedIds, match)] : [];
+    return opportunity && validTypes.has(opportunity.type) ? [toOpportunity(opportunity, selectedSavedIds, match)] : [];
   });
+
+  const { data: submitted, error: submittedError } = await supabase
+    .from('opportunities')
+    .select('*')
+    .eq('submitted_by', userId)
+    .eq('source_type', 'user_submitted');
+  if (submittedError) throw new Error('Unable to load submitted opportunities.');
+
+  if (params?.userSubmittedOnly) {
+    return (submitted ?? []).flatMap((row) => validTypes.has(row.type)
+      ? [toOpportunity(row as OpportunityRow, selectedSavedIds)]
+      : []);
+  }
+
+  const byId = new Map(matched.map((opportunity) => [opportunity.id, opportunity]));
+  for (const row of submitted ?? []) {
+    if (!validTypes.has(row.type)) continue;
+    const opportunity = toOpportunity(row as OpportunityRow, selectedSavedIds);
+    if (!byId.has(opportunity.id)) byId.set(opportunity.id, opportunity);
+  }
+  return [...byId.values()].sort((left, right) => right.score - left.score);
 }
 
 export async function getOpportunity(id: string): Promise<ApiOpportunity | null> {
@@ -111,10 +132,24 @@ export async function getOpportunity(id: string): Promise<ApiOpportunity | null>
   const { data, error } = await supabase.from('opportunity_matches').select('match_score, match_reason, opportunities!inner(*)').eq('profile_id', userId).eq('opportunity_id', id).maybeSingle();
   if (error) throw new Error('Unable to load the opportunity.');
   const opportunity = data?.opportunities as unknown as OpportunityRow | null;
-  return opportunity ? toOpportunity(opportunity, await savedIds(userId), data) : null;
+  if (opportunity && validTypes.has(opportunity.type)) {
+    return toOpportunity(opportunity, await savedIds(userId), data);
+  }
+
+  const { data: submitted, error: submittedError } = await supabase
+    .from('opportunities')
+    .select('*')
+    .eq('id', id)
+    .eq('submitted_by', userId)
+    .eq('source_type', 'user_submitted')
+    .maybeSingle();
+  if (submittedError) throw new Error('Unable to load the opportunity.');
+  return submitted && validTypes.has(submitted.type)
+    ? toOpportunity(submitted as OpportunityRow, await savedIds(userId))
+    : null;
 }
 
-export async function submitOpportunity(input: { url: string; notes?: string }): Promise<ApiOpportunity> {
+export async function submitOpportunity(input: { url: string; type: OpportunityType; notes?: string }): Promise<ApiOpportunity> {
   const userId = await requireUserId();
   const supabase = await createClient();
   let hostname = 'Submitted opportunity';
@@ -123,7 +158,7 @@ export async function submitOpportunity(input: { url: string; notes?: string }):
   } catch {
     throw new Error('Please provide a valid opportunity URL.');
   }
-  const { data, error } = await supabase.from('opportunities').insert({ title: hostname, organization: hostname, summary: input.notes?.trim() || 'User submitted opportunity pending review.', source_url: input.url, type: 'job', score: 50, why: 'Submitted by you for review.', source_type: 'user_submitted', submitted_by: userId }).select().single();
+  const { data, error } = await supabase.from('opportunities').insert({ title: hostname, organization: hostname, summary: input.notes?.trim() || 'User submitted opportunity pending review.', source_url: input.url, type: input.type, score: 50, why: 'Submitted by you for review.', source_type: 'user_submitted', submitted_by: userId }).select().single();
   if (error || !data) throw new Error('Unable to submit the opportunity.');
   return toOpportunity(data as OpportunityRow, new Set());
 }
@@ -135,7 +170,7 @@ export async function listSavedOpportunities(): Promise<ApiOpportunity[]> {
   if (error) throw new Error('Unable to load saved opportunities.');
   return (data ?? []).flatMap((row) => {
     const opportunity = row.opportunities as unknown as OpportunityRow | null;
-    return opportunity ? [toOpportunity(opportunity, new Set([opportunity.id]))] : [];
+    return opportunity && validTypes.has(opportunity.type) ? [toOpportunity(opportunity, new Set([opportunity.id]))] : [];
   });
 }
 

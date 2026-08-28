@@ -173,7 +173,7 @@ components:
         sourceUrl: { type: string }
         type:
           type: string
-          enum: [internship, fellowship, hackathon, scholarship, grant, job]
+          enum: [fellowship, builder_program, ambassador_program, hackathon, scholarship, grant]
         score: { type: number, minimum: 0, maximum: 100 }
         why: { type: string }
         deadline: { type: ["string", "null"] }
@@ -198,9 +198,12 @@ components:
         otherCriteria: { type: string }
     OpportunityInput:
       type: object
-      required: [url]
+      required: [url, type]
       properties:
-        url: { type: string }
+        url: { type: string, format: uri }
+        type:
+          type: string
+          enum: [fellowship, builder_program, ambassador_program, hackathon, scholarship, grant]
         notes: { type: string }
     Profile:
       type: object
@@ -219,7 +222,7 @@ components:
           type: array
           items:
             type: string
-            enum: [internship, fellowship, hackathon, scholarship, grant, job]
+            enum: [fellowship, builder_program, ambassador_program, hackathon, scholarship, grant]
         experienceLevel:
           type: string
           enum: [student, recent_grad, early_career]
@@ -239,8 +242,7 @@ components:
           type: array
           items:
             type: string
-            enum: [internship, fellowship, hackathon, scholarship, grant, job]
+            enum: [fellowship, builder_program, ambassador_program, hackathon, scholarship, grant]
         experienceLevel:
           type: string
           enum: [student, recent_grad, early_career]
-
