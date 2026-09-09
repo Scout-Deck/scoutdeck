@@ -3,7 +3,7 @@ export type SearchResult = {
   title: string;
   snippet: string;
 };
-const SEARCH_TIMEOUT_MS = 7_000;
+const SEARCH_TIMEOUT_MS = 15_000;
 const MAX_RESULTS_PER_QUERY = 2;
 const MAX_SEARCH_QUERIES = 3;
 export const MAX_SEARCH_TARGETS = 6;
@@ -18,16 +18,16 @@ export async function searchTavily(query: string): Promise<SearchResult[]> {
     return [];
   }
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), SEARCH_TIMEOUT_MS);
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), SEARCH_TIMEOUT_MS);
-    const response = await fetch('https://api.tavily.com/search', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    const response = await fetch("https://api.tavily.com/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         api_key: apiKey,
         query,
-        search_depth: 'advanced',
+        search_depth: "advanced",
         max_results: MAX_RESULTS_PER_QUERY,
         include_answer: false,
         include_raw_content: false,
@@ -43,19 +43,27 @@ export async function searchTavily(query: string): Promise<SearchResult[]> {
     const payload = (await response.json()) as TavilyResponse;
     return (payload.results ?? []).flatMap((result) => {
       if (!result.url) return [];
-      return [{
-        url: result.url,
-        title: result.title?.trim() || 'Untitled opportunity',
-        snippet: result.content?.trim() || '',
-      }];
+      return [
+        {
+          url: result.url,
+          title: result.title?.trim() || "Untitled opportunity",
+          snippet: result.content?.trim() || "",
+        },
+      ];
     });
   } catch {
     return [];
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
-export async function searchAllQueries(queries: string[]): Promise<SearchResult[]> {
-  const responses = await Promise.all(queries.slice(0, MAX_SEARCH_QUERIES).map(searchTavily));
+export async function searchAllQueries(
+  queries: string[],
+): Promise<SearchResult[]> {
+  const responses = await Promise.all(
+    queries.slice(0, MAX_SEARCH_QUERIES).map(searchTavily),
+  );
   const byUrl = new Map<string, SearchResult>();
   for (const result of responses.flat()) {
     if (!byUrl.has(result.url)) byUrl.set(result.url, result);
