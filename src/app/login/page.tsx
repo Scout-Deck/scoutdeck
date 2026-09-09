@@ -89,8 +89,8 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="grain grid min-h-dvh place-items-center bg-background p-6">
-      <section className="w-full max-w-md rounded-[28px] border border-card-border bg-card p-7 shadow-[0_10px_0_hsl(var(--foreground)/.06)] sm:p-9">
+    <main className="grain grid min-h-dvh place-items-center bg-background p-4 sm:p-6">
+      <section className="w-full max-w-md rounded-[24px] border border-card-border bg-card p-5 shadow-[0_10px_0_hsl(var(--foreground)/.06)] sm:rounded-[28px] sm:p-9">
         <div className="flex items-center gap-3">
           <Image
             src="/icon.jpg"

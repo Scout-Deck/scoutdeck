@@ -24,6 +24,7 @@ create table profiles (
   education_level text not null default '',
   field_of_study text not null default '',
   skills text[] not null default '{}',
+  experience text,
   interests text not null default '',
   location text not null default '',
   remote_ok boolean not null default true,

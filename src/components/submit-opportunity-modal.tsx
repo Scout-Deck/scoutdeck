@@ -31,10 +31,10 @@ export function SubmitOpportunityModal({ open, onOpenChange }: Props) {
   const close = () => { if (!submit.isPending) { onOpenChange(false); setSubmittedTitle(''); } };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/30 p-0 backdrop-blur-sm sm:items-center sm:p-5" role="dialog" aria-modal="true" data-testid="dialog-submit-opportunity">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/30 p-2 backdrop-blur-sm sm:items-center sm:p-5" role="dialog" aria-modal="true" data-testid="dialog-submit-opportunity">
       <button type="button" aria-label="Close dialog" onClick={close} className="absolute inset-0 cursor-default" data-testid="button-close-submit-backdrop" />
-      <div className="relative z-10 w-full max-w-[510px] rounded-t-[28px] border border-border bg-card p-6 shadow-2xl sm:rounded-[28px] sm:p-8">
-        <button type="button" onClick={close} className="focus-ring absolute right-5 top-5 rounded-full p-2 text-muted-foreground hover:bg-muted" data-testid="button-close-submit"><X size={18} /></button>
+      <div className="relative z-10 max-h-[calc(100dvh-1rem)] w-full max-w-[510px] overflow-y-auto rounded-[24px] border border-border bg-card p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl sm:rounded-[28px] sm:p-8">
+        <button type="button" onClick={close} className="focus-ring absolute right-3 top-3 grid size-11 place-items-center rounded-full text-muted-foreground hover:bg-muted sm:right-5 sm:top-5" data-testid="button-close-submit"><X size={18} /></button>
         {submittedTitle ? (
           <div className="py-8 text-center">
             <div className="mx-auto mb-5 grid size-14 place-items-center rounded-2xl bg-accent text-accent-foreground"><ArrowUpRight size={26} /></div>

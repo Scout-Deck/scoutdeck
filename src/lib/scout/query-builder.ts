@@ -26,10 +26,13 @@ export function buildSearchQueries(profile: ScoutProfile): string[] {
     ? profile.opportunityTypes
     : defaultTypes;
   const skills = profile.skills.filter(Boolean).slice(0, 3);
+  const experience = meaningfulTerms(profile.experience, 2);
   const interests = meaningfulTerms(profile.interests, 2);
   const context = [
     ...skills,
+    ...experience,
     ...interests,
+    profile.educationLevel.trim(),
     profile.fieldOfStudy.trim(),
     profile.location.trim(),
   ].filter(Boolean).slice(0, 6);

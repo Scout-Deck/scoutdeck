@@ -21,6 +21,7 @@ export const profilesTable = pgTable("profiles", {
   educationLevel: text("education_level").notNull(),
   fieldOfStudy: text("field_of_study").notNull(),
   skills: jsonb("skills").$type<string[]>().notNull(),
+  experience: text("experience"),
   interests: text("interests").notNull(),
   location: text("location").notNull(),
   remoteOk: boolean("remote_ok").notNull(),

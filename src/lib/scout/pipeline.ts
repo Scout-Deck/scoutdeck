@@ -10,11 +10,22 @@ import {
 } from "./supabase";
 import { searchAllQueries, MAX_SEARCH_TARGETS } from "./tavily";
 import type {
+  OpportunityType,
   RankedScoutMatch,
   ScoutCandidate,
   ScoutProfile,
   ScoutProgress,
 } from "./types";
+
+const SOCIAL_HOSTS = new Set([
+  "facebook.com",
+  "instagram.com",
+  "linkedin.com",
+  "threads.net",
+  "tiktok.com",
+  "twitter.com",
+  "x.com",
+]);
 
 export const MIN_VIABLE_RESULTS = 3;
 const EXTRACTION_CONCURRENCY = 2;
@@ -41,6 +52,43 @@ function emit(
   progress: ScoutProgress,
 ) {
   onProgress?.(progress);
+}
+
+function isSocialUrl(url: string): boolean {
+  try {
+    const hostname = new URL(url).hostname.replace(/^www\./, "");
+    return [...SOCIAL_HOSTS].some(
+      (host) => hostname === host || hostname.endsWith(`.${host}`),
+    );
+  } catch {
+    return false;
+  }
+}
+
+function socialCandidateType(
+  profile: ScoutProfile,
+  title: string,
+  snippet: string,
+): OpportunityType {
+  const text = `${title} ${snippet}`.toLowerCase();
+  const matchingType = profile.opportunityTypes.find((type) =>
+    text.includes(type.replace("_", " ")),
+  );
+  return matchingType ?? profile.opportunityTypes[0] ?? "fellowship";
+}
+
+async function extractWithRetry(input: { url: string; markdown: string }) {
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      return await extractOpportunity(input);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError;
 }
 
 function preRankCandidates(
@@ -141,10 +189,6 @@ async function rankLiveCandidates(
     `[scout] scrape:successful ${successfulScrapes.length}/${scrapeResults.length}`,
   );
 
-  if (!successfulScrapes.length) {
-    return [];
-  }
-
   // ─────────────────────────────
   // AI EXTRACTION
   // Only extraction uses AI
@@ -162,7 +206,7 @@ async function rankLiveCandidates(
     scrapeCandidates,
     EXTRACTION_CONCURRENCY,
     (result) =>
-      extractOpportunity({
+      extractWithRetry({
         url: result.url,
         markdown: result.markdown,
       }),
@@ -186,7 +230,47 @@ async function rankLiveCandidates(
         : [],
   );
 
-  const viableCandidates = liveCandidates.filter(
+  const resultByUrl = new Map(searchResults.map((result) => [result.url, result]));
+  const socialCandidates: ScoutCandidate[] = scrapeResults.flatMap(
+    (scrape, index) => {
+      if (scrape.ok || !isSocialUrl(scrape.url)) return [];
+
+      const searchResult = resultByUrl.get(scrape.url);
+      if (!searchResult) return [];
+
+      return [
+        {
+          candidateId: `social:${index}:${searchResult.url}`,
+          source: "live" as const,
+          title: searchResult.title,
+          type: socialCandidateType(
+            profile,
+            searchResult.title,
+            searchResult.snippet,
+          ),
+          sourceUrl: searchResult.url,
+          organization: null,
+          description: searchResult.snippet || null,
+          eligibility: {
+            educationLevel: null,
+            experience: null,
+            location: null,
+            remoteOk: null,
+            otherCriteria: null,
+          },
+          requiredSkills: [],
+          location: null,
+          isRemote: null,
+          deadline: null,
+          experienceLevel: null,
+          stipend: null,
+          confidence: "medium" as const,
+        },
+      ];
+    },
+  );
+
+  const viableCandidates = [...liveCandidates, ...socialCandidates].filter(
     (candidate) => candidate.confidence !== "low",
   );
 
@@ -325,18 +409,18 @@ export async function runScoutPipeline({
     }
   }
 
-  const persistedMatches = await persistScoutResults(
-    profile.id,
-    userId,
-    matches,
-  );
-
   const result: ScoutPipelineResult = {
-    matches: persistedMatches,
+    matches,
     usedFallback,
   };
 
   onResult?.(result);
+
+  // Stream the usable results first; persistence should not hide them when a
+  // database write is temporarily unavailable.
+  await persistScoutResults(profile.id, userId, matches).catch(
+    (error: unknown) => console.error("Unable to persist scout matches:", error),
+  );
 
   emit(onProgress, {
     stage: "done",

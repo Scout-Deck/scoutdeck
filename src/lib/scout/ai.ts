@@ -343,6 +343,10 @@ Return no more than five genuine fits.
 
 Do not invent eligibility requirements.
 
+Only use facts present in the candidate fields. If a candidate is sparse, do
+not infer a deadline, organisation, eligibility, compensation, location, or
+required skills.
+
 Each matchReason must cite:
 - two or three concrete profile facts
 - specific opportunity details

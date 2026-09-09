@@ -20,6 +20,7 @@ export const ScoutProfileSchema = z.object({
   educationLevel: z.string(),
   fieldOfStudy: z.string(),
   skills: z.array(z.string()).default([]),
+  experience: z.string().default(''),
   interests: z.string(),
   location: z.string(),
   remoteOk: z.boolean(),

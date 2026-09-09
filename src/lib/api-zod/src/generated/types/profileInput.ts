@@ -13,6 +13,7 @@ export interface ProfileInput {
   educationLevel?: string;
   fieldOfStudy?: string;
   skills?: string[];
+  experience?: string;
   interests?: string;
   location?: string;
   remoteOk?: boolean;
